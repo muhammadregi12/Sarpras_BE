@@ -2,7 +2,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const imageMiddleware = (folderName) => {
+const upload = (folderName) => {
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       const uploadPath = path.join("public", "upload", folderName);
@@ -42,4 +42,4 @@ const imageMiddleware = (folderName) => {
   });
 };
 
-module.exports = imageMiddleware;
+module.exports = upload;

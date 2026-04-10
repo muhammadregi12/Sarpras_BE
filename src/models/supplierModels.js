@@ -15,7 +15,15 @@ const Supplier = sequelize.define("Supplier", {
     perusahaan: {
         type: DataTypes.STRING,
         allowNull: false,
-    }
+    },
+    alamat_perusahaan: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    no_telp: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
 }, {
     tableName: "supplier",
     timestamps: true,

@@ -1,12 +1,16 @@
 require('dotenv').config()
 
 const express = require('express');
+const app = express();
 const cors = require('cors');
 const path = require('path');
-const app = express()
 
 // routes
-const routes = require('./routes/authRoutes');
+const authRoutes = require('./routes/authRoutes');
+const cabangRoutes = require('./routes/cabangRoutes');
+const kategoriRoutes = require('./routes/kategoriRoutes');
+const ruanganRoutes = require('./routes/ruanganRoutes');
+const supplierRoutes = require('./routes/supplierRoutes');
 
 // cors
 app.use(cors({
@@ -21,7 +25,11 @@ app.use(express.urlencoded({ extended: true }))
 app.use("/public", express.static(path.join(__dirname, "..", "public")));
 
 // routes
-app.use("/api", routes);
+app.use("/api/auth", authRoutes);
+app.use("/api/cabangs", cabangRoutes);
+app.use("/api/kategori", kategoriRoutes);
+app.use("/api/ruangans", ruanganRoutes);
+app.use("/api/suppliers", supplierRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hallo Developer')

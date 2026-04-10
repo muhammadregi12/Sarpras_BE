@@ -9,7 +9,7 @@
     "mysql2": "^3.20.0",
     "sequelize": "^6.37.8"
   },
-  "name": "topup",
+  "name": "sarpras",
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {

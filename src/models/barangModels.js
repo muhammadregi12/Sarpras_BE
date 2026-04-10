@@ -52,10 +52,10 @@ const Barang = sequelize.define("Barang", {
         type: DataTypes.TEXT,
         allowNull: true,
     },
-    kondisi: {
-        type: DataTypes.ENUM('baik', 'rusak_ringan', 'rusak_berat'),
-        allowNull: false,
-    },
+    // kondisi: {
+    //     type: DataTypes.ENUM('baik', 'rusak_ringan', 'rusak_berat'),
+    //     allowNull: false,
+    // },
     status: {
         type: DataTypes.ENUM('tersedia', 'dipinjam', 'maintenance'),
         allowNull: false,
