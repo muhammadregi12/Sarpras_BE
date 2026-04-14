@@ -5,19 +5,19 @@ async function supplierSeeder() {
     if (count === 0) {
         await Supplier.bulkCreate([
             {
-                name: "Supplier A",
+                name_supplier: "Supplier A",
                 perusahaan: "Perusahaan A",
                 no_telp: "081234567890",
                 alamat_perusahaan: "Jl. Contoh Alamat No. 1"
             },
             {
-                name: "Supplier B",
+                name_supplier: "Supplier B",
                 perusahaan: "Perusahaan B",
                 no_telp: "081234567891",
                 alamat_perusahaan: "Jl. Contoh Alamat No. 2"
             },
             {
-                name: "Supplier C",
+                name_supplier: "Supplier C",
                 perusahaan: "Perusahaan C",
                 no_telp: "081234567892",
                 alamat_perusahaan: "Jl. Contoh Alamat No. 3"

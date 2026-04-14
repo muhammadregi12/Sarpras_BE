@@ -1,4 +1,5 @@
 const User = require("../models/userModels");
+const bcrypt = require("bcryptjs");
 
 async function userSeeder() {
     const count = await User.count();

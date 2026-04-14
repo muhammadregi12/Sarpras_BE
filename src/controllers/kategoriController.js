@@ -1,4 +1,4 @@
-const { Kategori } = require('../models/kategoriModels');
+const Kategori  = require('../models/kategoriModels');
 
 exports.getAllKategori = async (req, res) => {
     try {
@@ -22,7 +22,8 @@ exports.getAllKategori = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }
@@ -46,7 +47,8 @@ exports.getKategoriById = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }
@@ -72,7 +74,8 @@ exports.createKategori = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }
@@ -107,7 +110,8 @@ exports.updateKategori = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }
@@ -132,7 +136,8 @@ exports.deleteKategori = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }

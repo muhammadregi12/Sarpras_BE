@@ -69,7 +69,7 @@ exports.createSupplier = async (req, res) => {
         }
 
         const supplier = await Supplier.create({
-            name: name_supplier,
+            name_supplier,
             perusahaan,
             alamat_perusahaan,
             no_telp
@@ -82,7 +82,8 @@ exports.createSupplier = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }
@@ -113,7 +114,7 @@ exports.updateSupplier = async (req, res) => {
         }
 
         const updateSupplier = await supplier.update({
-            name: name_supplier,
+            name_supplier,
             perusahaan,
             alamat_perusahaan,
             no_telp

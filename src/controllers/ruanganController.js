@@ -1,4 +1,5 @@
-const { Ruangan } = require('../models/ruanganModels');
+const Ruangan = require('../models/ruanganModels');
+const { Op } = require('sequelize');
 
 exports.getAllRuangan = async (req, res) => {
     try {
@@ -111,9 +112,11 @@ exports.updateRuangan = async (req, res) => {
         const existingRuangan = await Ruangan.findOne({
             where: {
                 kode_ruangan,
-                id: { [Sequelize.Op.ne]: id }
+                id: {
+                    [Op.ne]: id
+                }
             }
-        });
+        })
 
         if (existingRuangan) {
             return res.status(400).json({
@@ -133,7 +136,8 @@ exports.updateRuangan = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+            error: error.message
         })
     }
 }

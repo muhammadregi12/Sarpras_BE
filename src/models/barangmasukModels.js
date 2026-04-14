@@ -1,65 +1,66 @@
-const sequelize = require("../config/database");
 const { DataTypes } = require("sequelize");
+const sequelize = require("../config/database");
 
-const Barang = sequelize.define("Barang", {
+const BarangMasuk = sequelize.define("BarangMasuk", {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
-        autoIncrement: true,
-        allowNull: false,
     },
-    kode_barang: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-    },
-    ruangan_id: {
+    barang_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'ruangan',
+            model: 'barang',
             key: 'id',
-        },
+        }
     },
-    kategori_id: {
+    supplier_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'kategori',
+            model: 'supplier',
             key: 'id',
-        },
+        }
     },
-    name: {
-        type: DataTypes.STRING,
+    cabang_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: 'cabang',
+            key: 'id',
+        }
     },
-    image: {
+    no_dokumen: {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    satuan: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    jumlah: {
+    harga_satuan: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: 0,
+    },
+    tanggal_masuk: {
+        type: DataTypes.DATE,
+        allowNull: false,
     },
     keterangan: {
         type: DataTypes.TEXT,
         allowNull: true,
     },
-    tahun_pengadaan: {
+    user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id',
+        }
     },
+
 }, {
-    tableName: 'barang',
+    tableName: "barang_masuk",
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     underscored: true,
 });
 
-module.exports = Barang;
+module.exports = BarangMasuk;

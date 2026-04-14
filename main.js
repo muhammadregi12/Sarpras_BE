@@ -5,12 +5,17 @@ const app = require('./src/app');
 const sequelize = require('./src/config/database');
 const PORT = process.env.PORT || 3000
 
+// models
 const user = require('./src/models/userModels')
 const kategori = require('./src/models/kategoriModels')
 const supplier = require('./src/models/supplierModels')
 const cabang = require('./src/models/cabangModels')
 const ruangan = require('./src/models/ruanganModels')
 const barang = require('./src/models/barangModels');
+const barangMasuk = require('./src/models/barangmasukModels');
+const relasi = require('./src/models/relasiModels');
+
+// relasi
 const userSeeder = require('./src/seeders/userSeeder');
 const barangSeeder = require('./src/seeders/barangSeeder');
 const cabangSeeder = require('./src/seeders/cabangSeeder');
