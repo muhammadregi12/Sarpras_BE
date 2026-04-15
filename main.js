@@ -13,9 +13,13 @@ const cabang = require('./src/models/cabangModels')
 const ruangan = require('./src/models/ruanganModels')
 const barang = require('./src/models/barangModels');
 const barangMasuk = require('./src/models/barangmasukModels');
+const barangRusak = require('./src/models/barangrusakModels');
+const barangMaintenance = require('./src/models/barangmaintenanceModels');
+const barangKeluar = require('./src/models/barangkeluarModels');
 const relasi = require('./src/models/relasiModels');
 
-// relasi
+
+// seeder
 const userSeeder = require('./src/seeders/userSeeder');
 const barangSeeder = require('./src/seeders/barangSeeder');
 const cabangSeeder = require('./src/seeders/cabangSeeder');

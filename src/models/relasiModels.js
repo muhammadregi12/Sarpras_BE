@@ -5,6 +5,9 @@ const Kategori = require("./kategoriModels");
 const Ruangan = require("./ruanganModels");
 const Supplier = require("./supplierModels");
 const User = require("./userModels");
+const BarangRusak = require("./barangrusakModels");
+const BarangMaintenance = require("./barangmaintenanceModels");
+const BarangKeluar = require("./barangkeluarModels");
 
 // kategori - barang
 Kategori.hasMany(Barang, { 
@@ -66,6 +69,60 @@ BarangMasuk.belongsTo(User, {
     as: "user"
 });
 
+// barang rusak
+Barang.hasMany(BarangRusak, {
+    foreignKey: "barang_id",
+    as: "barang_rusak"
+});
+BarangRusak.belongsTo(Barang, {
+    foreignKey: "barang_id",
+    as: "barang"
+});
+User.hasMany(BarangRusak, {
+    foreignKey: "user_id",
+    as: "barang_rusak"
+});
+BarangRusak.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user"
+});
+
+// barang maintenance
+Barang.hasMany(BarangMaintenance, {
+    foreignKey: "barang_id",
+    as: "barang_maintenance"
+});
+BarangMaintenance.belongsTo(Barang, {
+    foreignKey: "barang_id",
+    as: "barang"
+});
+User.hasMany(BarangMaintenance, {
+    foreignKey: "user_id",
+    as: "barang_maintenance"
+});
+BarangMaintenance.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user"
+});
+
+// barang keluar
+Barang.hasMany(BarangKeluar, {
+    foreignKey: "barang_id",
+    as: "barang_keluar"
+});
+BarangKeluar.belongsTo(Barang, {
+    foreignKey: "barang_id",
+    as: "barang"
+});
+User.hasMany(BarangKeluar, {
+    foreignKey: "user_id",
+    as: "barang_keluar"
+});
+BarangKeluar.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user"
+});
+
 
 module.exports = {
     Barang,
@@ -73,6 +130,10 @@ module.exports = {
     Kategori,
     Ruangan,
     Supplier,
-    BarangMasuk
+    BarangMasuk,
+    User,
+    BarangRusak,
+    BarangMaintenance,
+    BarangKeluar
 };
 
