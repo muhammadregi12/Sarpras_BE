@@ -14,6 +14,8 @@ const supplierRoutes = require('./routes/supplierRoutes');
 const barangRoutes = require('./routes/barangRoutes');
 const barangMasukRoutes = require('./routes/barangmasukRoutes');
 const barangKeluarRoutes = require('./routes/barangkeluarRoutes');
+const barangMaintenanceRoutes = require('./routes/barangmaintenanceRoutes');
+const barangrusakRoutes = require('./routes/barangrusakRoutes');
 
 // cors
 app.use(cors({
@@ -36,6 +38,8 @@ app.use("/api/suppliers", supplierRoutes);
 app.use("/api/barangs", barangRoutes);
 app.use("/api/barangmasuk", barangMasukRoutes);
 app.use("/api/barangkeluar", barangKeluarRoutes);
+app.use("/api/barangrusak", barangrusakRoutes);
+app.use("/api/barangmaintenance", barangMaintenanceRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hallo Developer')

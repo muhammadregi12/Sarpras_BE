@@ -5,6 +5,8 @@ const BarangMasuk = sequelize.define("BarangMasuk", {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
     },
     barang_id: {
         type: DataTypes.INTEGER,
@@ -29,6 +31,10 @@ const BarangMasuk = sequelize.define("BarangMasuk", {
             model: 'cabang',
             key: 'id',
         }
+    },
+    jumlah: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     },
     no_dokumen: {
         type: DataTypes.STRING,

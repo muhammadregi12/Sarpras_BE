@@ -36,9 +36,9 @@ const BarangMaintenance = sequelize.define("BarangMaintenance", {
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM('proses', 'selesai'),
+        type: DataTypes.ENUM('maintenance', 'selesai'),
         allowNull: false,
-        defaultValue: 'proses',
+        defaultValue: 'maintenance',
     },
     keterangan: {
         type: DataTypes.TEXT,
@@ -47,7 +47,17 @@ const BarangMaintenance = sequelize.define("BarangMaintenance", {
     biaya: {
         type: DataTypes.INTEGER,
         allowNull: true,
-    }
+    },
+    jumlah_rusak_hasil: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+    },
+    jumlah_selesai: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+    },
 }, {
     tableName: "barang_maintenance",
     timestamps: true,

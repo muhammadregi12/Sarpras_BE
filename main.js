@@ -30,7 +30,7 @@ const kategoriSeeder = require('./src/seeders/kategoriSeeder');
 const startServer = async () => {
     try {
         await sequelize.authenticate();
-        await sequelize.sync({ alter: true });
+        await sequelize.sync();
 
         console.log("mysql connected");
 

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const barangMasukController = require('../controllers/barangmasukController');
 
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 // middleware auth
 router.use(authMiddleware);

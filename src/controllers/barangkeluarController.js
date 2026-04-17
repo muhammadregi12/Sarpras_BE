@@ -11,7 +11,7 @@ exports.getAllBarangKeluar = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const barangKeluar = await BarangKeluar.findAndCountAll({
-            attributes: ["id", "jumlah", "tanggal_keluar", "keterangan"],
+            attributes: ["id", "jumlah_keluar", "tanggal_keluar", "keterangan"],
             include: [
                 {
                     model: Barang,
@@ -95,8 +95,6 @@ exports.getBarangKeluarById = async (req, res) => {
     }
 }
 
-
-
 exports.createBarangKeluar = async (req, res) => {
     try {
         
@@ -115,17 +113,8 @@ exports.createBarangKeluar = async (req, res) => {
             });
         }
 
-        const barangKeluar = await BarangKeluar.create({
-            barang_id,
-            user_id,
-            cabang_id,
-            jumlah_keluar,
-            tanggal_keluar,
-            keterangan
-        })
-
         if (updateJumlahBarang) {
-            const newJumlah = updateJumlahBarang.jumlah - jumlah_keluar;
+            const newJumlah = updateJumlahBarang.jumlah - parseInt(jumlah_keluar);
             if (newJumlah < 0) {
                 return res.status(400).json({
                     message: "Jumlah Keluar melebihi jumlah barang yang tersedia"
@@ -133,7 +122,16 @@ exports.createBarangKeluar = async (req, res) => {
             }
         }
 
-        updateJumlahBarang.jumlah -= jumlah_keluar;
+        const barangKeluar = await BarangKeluar.create({
+            barang_id,
+            user_id: req.user.id,
+            cabang_id,
+            jumlah_keluar,
+            tanggal_keluar,
+            keterangan
+        })
+
+        updateJumlahBarang.jumlah -= parseInt(jumlah_keluar);
         await updateJumlahBarang.save();
 
         return res.status(201).json({
@@ -151,58 +149,81 @@ exports.createBarangKeluar = async (req, res) => {
 
 exports.updateBarangKeluar = async (req, res) => {
     try {
-        
         const { id } = req.params;
-        const { barang_id, user_id, cabang_id, jumlah_keluar, tanggal_keluar, keterangan } = req.body;
-        const barangKeluar = await BarangKeluar.findByPk(id);
+        const { barang_id, cabang_id, jumlah_keluar, tanggal_keluar, keterangan } = req.body;
 
+        const barangKeluar = await BarangKeluar.findByPk(id);
         if (!barangKeluar) {
             return res.status(404).json({
                 message: "Barang Keluar Not Found"
             });
         }
 
-        const updateJumlahBarang = await Barang.findByPk(barang_id);
-        if (!updateJumlahBarang) {
-            return res.status(404).json({
-                message: "Barang Not Found"
-            });
+        const oldBarangId = parseInt(barangKeluar.barang_id);
+        const newBarangId = parseInt(barang_id);
+        const oldJumlahKeluar = parseInt(barangKeluar.jumlah_keluar);
+        const newJumlahKeluar = parseInt(jumlah_keluar);
+
+        if (oldBarangId !== newBarangId) {
+            const oldBarang = await Barang.findByPk(oldBarangId);
+            if (oldBarang) {
+                oldBarang.jumlah += oldJumlahKeluar;
+                await oldBarang.save();
+            }
+
+            const newBarang = await Barang.findByPk(newBarangId);
+            if (!newBarang) {
+                return res.status(404).json({ message: "Barang Not Found" });
+            }
+
+            if (newBarang.jumlah < newJumlahKeluar) {
+                return res.status(400).json({
+                    message: "Jumlah Keluar melebihi jumlah barang yang tersedia"
+                });
+            }
+
+            newBarang.jumlah -= newJumlahKeluar;
+            await newBarang.save();
+
+        } else {
+            const barang = await Barang.findByPk(newBarangId);
+            if (!barang) {
+                return res.status(404).json({ message: "Barang Not Found" });
+            }
+
+            const stokAktual = barang.jumlah + oldJumlahKeluar;
+
+            if (stokAktual < newJumlahKeluar) {
+                return res.status(400).json({
+                    message: "Jumlah Keluar melebihi jumlah barang yang tersedia"
+                });
+            }
+            
+            barang.jumlah = stokAktual - newJumlahKeluar;
+            await barang.save();
         }
-
-        if (updateJumlahBarang.jumlah < 0) {
-            return res.status(400).json({
-                message: "Jumlah Keluar melebihi jumlah barang yang tersedia"
-            });
-        }
-
-        const jumlahKeluarSebelumnya = barangKeluar.jumlah_keluar;
-        const selisihJumlah = jumlah_keluar - jumlahKeluarSebelumnya;
-
-        updateJumlahBarang.jumlah -= selisihJumlah;
-        await updateJumlahBarang.save();
 
         const updatedBarangKeluar = await barangKeluar.update({
-            barang_id,
-            user_id,
+            barang_id: newBarangId,
+            user_id: req.user.id,
             cabang_id,
-            jumlah_keluar,
+            jumlah_keluar: newJumlahKeluar,
             tanggal_keluar,
             keterangan
         });
 
-
         return res.status(200).json({
-            message: "update barang keluar",
+            message: "Update Barang Keluar",
             data: updatedBarangKeluar
-        })
+        });
 
     } catch (error) {
         return res.status(500).json({
             message: "Internal Server Error",
             error: error.message
-        })
+        });
     }
-}
+};
 
 
 exports.deleteBarangKeluar = async (req, res) => {
@@ -218,7 +239,7 @@ exports.deleteBarangKeluar = async (req, res) => {
 
         const updateJumlahBarang = await Barang.findByPk(barangKeluar.barang_id);
         if (updateJumlahBarang) {
-            updateJumlahBarang.jumlah += barangKeluar.jumlah_keluar;
+            updateJumlahBarang.jumlah += parseInt(barangKeluar.jumlah_keluar);
             await updateJumlahBarang.save();
         }
 

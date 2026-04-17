@@ -24,7 +24,7 @@ const BarangRusak = sequelize.define("BarangRusak", {
             key: 'id',
         }
     },
-    jumlah_keluar: {
+    jumlah_rusak: {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
@@ -42,7 +42,7 @@ const BarangRusak = sequelize.define("BarangRusak", {
     }
 
 },{
-    tableName: "barang_keluar",
+    tableName: "barang_rusak",
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',

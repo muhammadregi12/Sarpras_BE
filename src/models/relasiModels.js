@@ -50,6 +50,16 @@ BarangMasuk.belongsTo(Barang, {
     as: "barang"
 });
 
+// cabang - barang masuk
+Cabang.hasMany(BarangMasuk, {
+    foreignKey: "cabang_id",
+    as: "barang_masuk"
+})
+BarangMasuk.belongsTo(Cabang, {
+    foreignKey: "cabang_id",
+    as: "cabang"
+});
+
 // relasi supplier dan barang masuk
 Supplier.hasMany(BarangMasuk, {
     foreignKey: "supplier_id",
@@ -104,6 +114,15 @@ BarangMaintenance.belongsTo(User, {
     foreignKey: "user_id",
     as: "user"
 });
+BarangMaintenance.hasMany(BarangRusak, {
+    foreignKey: "barangrusak_id",
+    as: "barang_rusak"
+});
+BarangRusak.belongsTo(BarangMaintenance, {
+    foreignKey: "barangrusak_id",
+    as: "barang_maintenance"
+});
+
 
 // barang keluar
 Barang.hasMany(BarangKeluar, {
@@ -121,6 +140,15 @@ User.hasMany(BarangKeluar, {
 BarangKeluar.belongsTo(User, {
     foreignKey: "user_id",
     as: "user"
+});
+
+Cabang.hasMany(BarangKeluar, {
+    foreignKey: "cabang_id",
+    as: "barang_keluar"
+})
+BarangKeluar.belongsTo(Cabang, {
+    foreignKey: "cabang_id",
+    as: "cabang"
 });
 
 

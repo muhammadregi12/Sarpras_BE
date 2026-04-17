@@ -112,9 +112,9 @@ exports.getBarangMasukById = async (req, res) => {
 exports.createBarangMasuk = async (req, res) => {
     try {
         
-        const { barang_id, supplier_id, cabang_id, no_dokumen, harga_satuan, tanggal_masuk, keterangan, user_id } = req.body;
+        const { barang_id, supplier_id, cabang_id, jumlah, no_dokumen, harga_satuan, tanggal_masuk, keterangan, user_id } = req.body;
 
-        if (!barang_id || !supplier_id || !cabang_id || !harga_satuan || !tanggal_masuk || !user_id) {
+        if (!barang_id || !supplier_id || !cabang_id || !harga_satuan || !tanggal_masuk || !jumlah) {
             return res.status(400).json({
                 message: "All fields are required"
             });
@@ -128,12 +128,13 @@ exports.createBarangMasuk = async (req, res) => {
             harga_satuan,
             tanggal_masuk,
             keterangan,
-            user_id: req.user.id
+            user_id: req.user.id,
+            jumlah
         })
 
         const updateJumlahBarang = await Barang.findByPk(barang_id);
         if (updateJumlahBarang) {
-            updateJumlahBarang.jumlah += 1;
+            updateJumlahBarang.jumlah += jumlah;
             await updateJumlahBarang.save();
         }
 
@@ -153,9 +154,9 @@ exports.createBarangMasuk = async (req, res) => {
 exports.updateBarangMasuk = async (req, res) => {
     try {
         
-        const { barang_id, supplier_id, cabang_id, no_dokumen, harga_satuan, tanggal_masuk, keterangan } = req.body;
+        const { barang_id, user_id, supplier_id, cabang_id, jumlah, no_dokumen, harga_satuan, tanggal_masuk, keterangan } = req.body;
 
-        if (!barang_id || !supplier_id || !cabang_id || !harga_satuan || !tanggal_masuk) {
+        if (!barang_id || !supplier_id || !cabang_id || !harga_satuan || !tanggal_masuk || !jumlah) {
             return res.status(400).json({
                 message: "All fields are required"
             });
@@ -168,14 +169,28 @@ exports.updateBarangMasuk = async (req, res) => {
             });
         }
 
-        const updateJumlahBarang = await Barang.findByPk(barang_id);
-        if (updateJumlahBarang) {
-            if (barangMasuk.barang_id !== barang_id) {
-                const oldBarang = await Barang.findByPk(barangMasuk.barang_id);
-                if (oldBarang) {
-                    oldBarang.jumlah -= 1;
-                    await oldBarang.save();
-                }
+        // Simpan nilai lama sebelum diupdate
+        const oldBarangId = barangMasuk.barang_id;
+        const oldJumlah = barangMasuk.jumlah;
+
+        if (oldBarangId !== barang_id) {
+            const oldBarang = await Barang.findByPk(oldBarangId);
+            if (oldBarang) {
+                oldBarang.jumlah -= oldJumlah; 
+                await oldBarang.save();
+            }
+
+            const newBarang = await Barang.findByPk(barang_id);
+            if (newBarang) {
+                newBarang.jumlah += jumlah;  
+                await newBarang.save();
+            }
+        } else {
+            const selisih = jumlah - oldJumlah;
+            const barang = await Barang.findByPk(barang_id);
+            if (barang) {
+                barang.jumlah += selisih;
+                await barang.save();
             }
         }
 
@@ -183,10 +198,12 @@ exports.updateBarangMasuk = async (req, res) => {
             barang_id,
             supplier_id,
             cabang_id,
+            jumlah,
             no_dokumen,
             harga_satuan,
             tanggal_masuk,
-            keterangan
+            keterangan,
+            user_id: req.user.id
         });
 
 
@@ -214,7 +231,7 @@ exports.deleteBarangMasuk = async (req, res) => {
 
         const updateJumlahBarang = await Barang.findByPk(barangMasuk.barang_id);
         if (updateJumlahBarang) {
-            updateJumlahBarang.jumlah -= 1;
+            updateJumlahBarang.jumlah -= barangMasuk.jumlah;
             await updateJumlahBarang.save();
         }
 
