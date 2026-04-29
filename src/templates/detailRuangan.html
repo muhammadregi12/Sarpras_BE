@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <title>Detail Ruangan - {{kodeRuangan}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            background: #fff;
+            padding: 20px 30px;
+        }
+
+        /* ── HEADER ─────────────────────────────────── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #1A73E8;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1A73E8;
+            letter-spacing: 0.5px;
+        }
+
+        .header-left .sub {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .header-left .kode-badge {
+            display: inline-block;
+            margin-top: 8px;
+            background: #e8f0fe;
+            color: #1A73E8;
+            border: 1px solid #c7d9f8;
+            border-radius: 5px;
+            padding: 3px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 10px;
+            color: #888;
+            line-height: 1.8;
+        }
+
+        .header-right .label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* ── QR + INFO ROW ───────────────────────────── */
+        .top-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+
+        /* QR code box */
+        .qr-box {
+            flex-shrink: 0;
+            background: #f8fbff;
+            border: 1px solid #c7d9f8;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            width: 130px;
+        }
+
+        .qr-box img {
+            width: 100px;
+            height: 100px;
+        }
+
+        .qr-box .qr-label {
+            font-size: 9px;
+            color: #999;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* Info cards */
+        .info-cards {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+        }
+
+        .card {
+            flex: 1;
+            background: #f0f4ff;
+            border: 1px solid #c7d9f8;
+            border-left: 4px solid #1A73E8;
+            border-radius: 6px;
+            padding: 10px 14px;
+        }
+
+        .card .card-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .card .card-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1A73E8;
+        }
+
+        .card .card-sub {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        /* ── TABLE ──────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        thead tr {
+            background: #1A73E8;
+            color: #fff;
+        }
+
+        thead th {
+            padding: 9px 8px;
+            text-align: center;
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border: 1px solid #1558b0;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e8edf5;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f5f8ff;
+        }
+
+        tbody td {
+            padding: 7px 8px;
+            font-size: 10.5px;
+            border: 1px solid #e0e7f3;
+            vertical-align: middle;
+        }
+
+        td.center { text-align: center; }
+        td.right  { text-align: right; }
+
+        /* ── BADGES ─────────────────────────────────── */
+        .badge-kode {
+            background: #e8f0fe;
+            color: #1A73E8;
+            border: 1px solid #c7d9f8;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-baik {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #b8dfc4;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-sedang {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-rusak {
+            background: #fde8e8;
+            color: #C0392B;
+            border: 1px solid #f5c0bc;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* ── TOTAL ROW ──────────────────────────────── */
+        .total-row {
+            background: #e8f0fe !important;
+            border-top: 2px solid #1A73E8 !important;
+        }
+
+        .total-row td {
+            font-weight: 700;
+            color: #1A73E8;
+            font-size: 11px;
+            border-color: #c7d9f8 !important;
+        }
+
+        /* ── NO DATA ────────────────────────────────── */
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        /* ── FOOTER ─────────────────────────────────── */
+        .footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-top: 1px solid #e0e7f3;
+            padding-top: 12px;
+        }
+
+        .footer-note {
+            font-size: 9.5px;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        .ttd-area {
+            text-align: center;
+            font-size: 10.5px;
+            color: #555;
+        }
+
+        .ttd-area .ttd-box {
+            width: 150px;
+            border-bottom: 1px solid #555;
+            margin: 50px auto 4px;
+        }
+
+        .ttd-area .ttd-label {
+            font-size: 10px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── HEADER ── -->
+    <div class="header">
+        <div class="header-left">
+            <h1>DETAIL INVENTARIS RUANGAN</h1>
+            <p class="sub">Sistem Informasi Sarana dan Prasarana</p>
+            <div>
+                <span class="kode-badge">{{kodeRuangan}}</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div><span class="label">Ruangan &nbsp;:</span> {{namaRuangan}}</div>
+            <div><span class="label">Dicetak &nbsp;:</span> {{printDate}}</div>
+        </div>
+    </div>
+
+    <!-- ── QR + INFO CARDS ── -->
+    <div class="top-row">
+
+        <!-- QR Code -->
+        <div class="qr-box">
+            <img src="{{qrBase64}}" alt="QR Code {{kodeRuangan}}" />
+            <div class="qr-label">Scan untuk melihat<br/>detail ruangan ini</div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-cards">
+            <div class="card">
+                <div class="card-label">Nama Ruangan</div>
+                <div class="card-value" style="font-size:14px;">{{namaRuangan}}</div>
+                <div class="card-sub">{{kodeRuangan}}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Jenis Barang</div>
+                <div class="card-value">{{totalJenisBarang}}</div>
+                <div class="card-sub">jenis barang tercatat</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Total Stok</div>
+                <div class="card-value">{{totalStok}}</div>
+                <div class="card-sub">unit barang di ruangan ini</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── TABLE ── -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px;">No</th>
+                <th style="width:90px;">Kode Barang</th>
+                <th>Nama Barang</th>
+                <th style="width:55px;">Jumlah</th>
+                <th style="width:55px;">Satuan</th>
+                <th style="width:80px;">Kondisi</th>
+                <th style="width:100px;">Tgl Masuk</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{tableRows}}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="3" style="text-align:right;">TOTAL</td>
+                <td class="center">{{totalStok}} unit</td>
+                <td colspan="3"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- ── FOOTER ── -->
+    <div class="footer">
+        <div class="footer-note">
+            * Dokumen ini digenerate secara otomatis oleh sistem.<br/>
+            * Data inventaris sesuai kondisi pada saat dokumen dicetak.
+        </div>
+        <div class="ttd-area">
+            <div class="ttd-box"></div>
+            <div>Penanggung Jawab Ruangan,</div>
+            <div class="ttd-label">( _________________________ )</div>
+        </div>
+    </div>
+
+</body>
+</html>

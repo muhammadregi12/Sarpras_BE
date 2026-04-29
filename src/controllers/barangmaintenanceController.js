@@ -1,6 +1,8 @@
 const BarangMaintenance = require("../models/barangmaintenanceModels");
 const Barang = require("../models/barangModels");
 const User = require("../models/userModels");
+const { generatePDF } = require("../services/exportPdf");
+const ExcelJS = require("exceljs");
 
 exports.getAllBarangMaintenance = async (req, res) => {
     try {
@@ -320,3 +322,237 @@ exports.deleteBarangMaintenance = async (req, res) => {
         })
     }
 }
+
+exports.exportPDFBarangMaintenance = async (req, res) => {
+    try {
+
+        const barangMaintenance = await BarangMaintenance.findAll({
+            order: [['tanggal_maintenance', 'DESC']],
+            include: [
+                {
+                    model: Barang,
+                    as: "barang",
+                    attributes: ["id", "name", "kode_barang"]
+                },
+                {
+                    model: User,
+                    as: "user",
+                    attributes: ["id", "name"]
+                }
+            ]
+        });
+
+        const tableRows = barangMaintenance.map((item, index) => {
+            const d = item.toJSON();
+
+            const tanggalMaintenance = d.tanggal_maintenance
+                ? new Date(d.tanggal_maintenance).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                  })
+                : '-';
+
+            const tanggalSelesai = d.tanggal_selesai
+                ? new Date(d.tanggal_selesai).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                  })
+                : '-';
+
+            const statusBadge = d.status === 'selesai'
+                ? `<span class="badge-selesai">Selesai</span>`
+                : `<span class="badge-proses">Dalam Proses</span>`;
+
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${d.barang ? d.barang.kode_barang : '-'}</td>
+                    <td>${d.barang ? d.barang.name : '-'}</td>
+                    <td>${d.jumlah_maintenance ?? '-'}</td>
+                    <td>${tanggalMaintenance}</td>
+                    <td>${tanggalSelesai}</td>
+                    <td>${statusBadge}</td>
+                    <td>${d.keterangan ?? '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const data = {
+            printDate: new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }),
+            totalMaintenance: barangMaintenance.length,
+            tableRows,
+        };
+
+        const pdfBuffer = await generatePDF('barangMaintenance.html', data);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="laporan-maintenance.pdf"',
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.send(pdfBuffer);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+};
+
+exports.exportExcelBarangMaintenance = async (req, res) => {
+    try {
+
+        const barangMaintenance = await BarangMaintenance.findAll({
+            order: [['tanggal_maintenance', 'DESC']],
+            include: [
+                {
+                    model: Barang,
+                    as: "barang",
+                    attributes: ["id", "name", "kode_barang"]
+                },
+                {
+                    model: User,
+                    as: "user",
+                    attributes: ["id", "name"]
+                }
+            ]
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Data Barang Maintenance');
+
+        const headerStyle = {
+            font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE67E22' } },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+            border: {
+                top:    { style: 'thin', color: { argb: 'FFFFD699' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFD699' } },
+                left:   { style: 'thin', color: { argb: 'FFFFD699' } },
+                right:  { style: 'thin', color: { argb: 'FFFFD699' } },
+            }
+        };
+
+        const rowBorder = {
+            top:    { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            left:   { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            right:  { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        };
+
+        // Judul
+        worksheet.mergeCells('A1:H1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = 'LAPORAN DATA BARANG MAINTENANCE';
+        titleCell.font = { bold: true, size: 14, color: { argb: 'FFE67E22' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(1).height = 30;
+
+        // Tanggal cetak
+        worksheet.mergeCells('A2:H2');
+        const dateCell = worksheet.getCell('A2');
+        dateCell.value = `Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}`;
+        dateCell.font = { italic: true, size: 10, color: { argb: 'FF888888' } };
+        dateCell.alignment = { horizontal: 'center' };
+        worksheet.getRow(2).height = 20;
+
+        // Baris kosong
+        worksheet.addRow([]);
+
+        // Header kolom
+        const headerRow = worksheet.addRow([
+            'No', 'Kode Barang', 'Nama Barang', 'Jumlah',
+            'Tanggal Maintenance', 'Tanggal Selesai', 'Status', 'Keterangan'
+        ]);
+        headerRow.height = 25;
+        headerRow.eachCell((cell) => {
+            cell.font      = headerStyle.font;
+            cell.fill      = headerStyle.fill;
+            cell.alignment = headerStyle.alignment;
+            cell.border    = headerStyle.border;
+        });
+
+        // Lebar kolom
+        worksheet.columns = [
+            { key: 'no',                  width: 5  },
+            { key: 'kode_barang',         width: 15 },
+            { key: 'name',                width: 25 },
+            { key: 'jumlah_maintenance',  width: 10 },
+            { key: 'tanggal_maintenance', width: 22 },
+            { key: 'tanggal_selesai',     width: 22 },
+            { key: 'status',              width: 15 },
+            { key: 'keterangan',          width: 30 },
+        ];
+
+        // Isi data
+        barangMaintenance.forEach((item, index) => {
+            const d = item.toJSON();
+
+            const tanggalMaintenance = d.tanggal_maintenance
+                ? new Date(d.tanggal_maintenance).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                  })
+                : '-';
+
+            const tanggalSelesai = d.tanggal_selesai
+                ? new Date(d.tanggal_selesai).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                  })
+                : '-';
+
+            const dataRow = worksheet.addRow([
+                index + 1,
+                d.barang?.kode_barang ?? '-',
+                d.barang?.name        ?? '-',
+                d.jumlah_maintenance  ?? '-',
+                tanggalMaintenance,
+                tanggalSelesai,
+                d.status              ?? '-',
+                d.keterangan          ?? '-',
+            ]);
+
+            dataRow.height = 20;
+            dataRow.eachCell((cell) => {
+                cell.border    = rowBorder;
+                cell.alignment = { vertical: 'middle' };
+            });
+
+            // Warna selang-seling
+            if (index % 2 === 0) {
+                dataRow.eachCell((cell) => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF8F0' } };
+                });
+            }
+
+            // Warna status cell
+            const statusCell = dataRow.getCell(7);
+            if (d.status === 'selesai') {
+                statusCell.font = { bold: true, color: { argb: 'FF155724' } };
+                statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+            } else {
+                statusCell.font = { bold: true, color: { argb: 'FF856404' } };
+                statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3CD' } };
+            }
+        });
+
+        // Baris total
+        const totalRow = worksheet.addRow(['', '', 'Total', barangMaintenance.length, '', '', '', '']);
+        totalRow.getCell(3).font = { bold: true };
+        totalRow.getCell(4).font = { bold: true, color: { argb: 'FFE67E22' } };
+
+        // Kirim response
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename="laporan-barang-maintenance.xlsx"',
+        });
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            error: error.message,
+        });
+    }
+};

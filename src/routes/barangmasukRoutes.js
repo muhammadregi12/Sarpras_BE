@@ -9,6 +9,8 @@ router.use(authMiddleware);
 
 // routes
 router.get('/', barangMasukController.getAllBarangMasuk);
+router.get('/export/pdf', barangMasukController.exportPDFBarangMasuk);
+router.get('/export/excel', barangMasukController.exportExcelBarangMasuk);
 router.get('/:id', barangMasukController.getBarangMasukById);
 router.post('/', barangMasukController.createBarangMasuk);
 router.put('/:id', barangMasukController.updateBarangMasuk);

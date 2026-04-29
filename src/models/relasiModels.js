@@ -38,6 +38,14 @@ Barang.belongsTo(Supplier, {
     foreignKey: "supplier_id",
     as: "supplier"
 });
+Cabang.hasMany(Barang, {
+    foreignKey: "cabang_id",
+    as: "barang"
+});
+Barang.belongsTo(Cabang, {
+    foreignKey: "cabang_id",
+    as: "cabang"
+});
 
 
 // relasi barang masuk
@@ -49,18 +57,22 @@ BarangMasuk.belongsTo(Barang, {
     foreignKey: "barang_id",
     as: "barang"
 });
-
-// cabang - barang masuk
 Cabang.hasMany(BarangMasuk, {
     foreignKey: "cabang_id",
     as: "barang_masuk"
+})
+Ruangan.hasMany(BarangMasuk, {
+    foreignKey: "ruangan_id",
+    as: "barang_masuk"
+})
+BarangMasuk.belongsTo(Ruangan, {
+    foreignKey: "ruangan_id",
+    as: "ruangan"
 })
 BarangMasuk.belongsTo(Cabang, {
     foreignKey: "cabang_id",
     as: "cabang"
 });
-
-// relasi supplier dan barang masuk
 Supplier.hasMany(BarangMasuk, {
     foreignKey: "supplier_id",
     as: "barang_masuk"
@@ -95,6 +107,22 @@ User.hasMany(BarangRusak, {
 BarangRusak.belongsTo(User, {
     foreignKey: "user_id",
     as: "user"
+});
+Cabang.hasMany(BarangRusak, {
+    foreignKey: "cabang_id",
+    as: "barang_rusak"
+})
+BarangRusak.belongsTo(Cabang, {
+    foreignKey: "cabang_id",
+    as: "cabang"
+});
+Ruangan.hasMany(BarangRusak, {
+    foreignKey: "ruangan_id",
+    as: "barang_rusak"
+})
+BarangRusak.belongsTo(Ruangan, {
+    foreignKey: "ruangan_id",
+    as: "ruangan"
 });
 
 // barang maintenance
@@ -141,7 +169,14 @@ BarangKeluar.belongsTo(User, {
     foreignKey: "user_id",
     as: "user"
 });
-
+BarangKeluar.hasMany(Ruangan, {
+    foreignKey: "ruangan_id",
+    as: "ruangan"
+})
+Ruangan.belongsTo(BarangKeluar, {
+    foreignKey: "ruangan_id",
+    as: "barang_keluar"
+});
 Cabang.hasMany(BarangKeluar, {
     foreignKey: "cabang_id",
     as: "barang_keluar"

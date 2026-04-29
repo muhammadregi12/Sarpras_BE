@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authContoller = require('../controllers/authController');
 const { authMiddleware } = require('../middleware/authMiddleware');
-const upload  = require('../middleware/uploadMiddleware');
+const { upload }  = require('../middleware/uploadMiddleware');
 
 
 router.post('/login', authContoller.login);

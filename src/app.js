@@ -16,6 +16,11 @@ const barangMasukRoutes = require('./routes/barangmasukRoutes');
 const barangKeluarRoutes = require('./routes/barangkeluarRoutes');
 const barangMaintenanceRoutes = require('./routes/barangmaintenanceRoutes');
 const barangrusakRoutes = require('./routes/barangrusakRoutes');
+const importRoutes = require('./routes/importRoutes')
+const laporanbarangRoutes = require('./routes/laporanRoutes')
+// const laporanbarangmasukRoutes = require('./routes/laporan/laporanbarangmasukRoutes')
+const scanRoutes = require('./routes/scanRoutes')
+const dashboardRoutes = require('./routes/dashboardRoutes')
 
 // cors
 app.use(cors({
@@ -40,6 +45,12 @@ app.use("/api/barangmasuk", barangMasukRoutes);
 app.use("/api/barangkeluar", barangKeluarRoutes);
 app.use("/api/barangrusak", barangrusakRoutes);
 app.use("/api/barangmaintenance", barangMaintenanceRoutes);
+app.use("/api/import", importRoutes);
+app.use("/api/laporan", laporanbarangRoutes);
+// app.use("/api/laporanbarangmasuk", laporanbarangmasukRoutes);
+app.use("/api/scan", scanRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+
 
 app.get('/', (req, res) => {
     res.send('Hallo Developer')

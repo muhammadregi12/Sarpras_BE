@@ -15,11 +15,19 @@ const Barang = sequelize.define("Barang", {
     },
     ruangan_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
             model: 'ruangan',
             key: 'id',
         },
+    },
+    cabang_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'cabang',
+            key: 'id',
+        }
     },
     kategori_id: {
         type: DataTypes.INTEGER,

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Laporan Barang Rusak</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            background: #fff;
+            padding: 20px 30px;
+        }
+
+        /* ── HEADER ─────────────────────────────────── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #C0392B;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #C0392B;
+            letter-spacing: 0.5px;
+        }
+
+        .header-left p {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 10px;
+            color: #888;
+            line-height: 1.6;
+        }
+
+        .header-right .label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* ── INFO CARDS ─────────────────────────────── */
+        .info-cards {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .card {
+            flex: 1;
+            background: #fff0f0;
+            border: 1px solid #f5c0bc;
+            border-left: 4px solid #C0392B;
+            border-radius: 6px;
+            padding: 10px 14px;
+        }
+
+        .card .card-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .card .card-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: #C0392B;
+        }
+
+        .card .card-sub {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        /* ── TABLE ──────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        thead tr {
+            background: #C0392B;
+            color: #fff;
+        }
+
+        thead th {
+            padding: 9px 8px;
+            text-align: center;
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border: 1px solid #962d22;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f5e0e0;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fff5f5;
+        }
+
+        tbody td {
+            padding: 7px 8px;
+            font-size: 10.5px;
+            border: 1px solid #f0dada;
+            vertical-align: middle;
+        }
+
+        td.center { text-align: center; }
+        td.right  { text-align: right; }
+
+        /* ── BADGE kode barang ──────────────────────── */
+        .badge-kode {
+            background: #fde8e8;
+            color: #C0392B;
+            border: 1px solid #f5c0bc;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* ── BADGE tingkat kerusakan ────────────────── */
+        .badge-ringan {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-sedang {
+            background: #ffe5d0;
+            color: #a04000;
+            border: 1px solid #ffbc85;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-berat {
+            background: #fde8e8;
+            color: #C0392B;
+            border: 1px solid #f5c0bc;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* ── TOTAL ROW ──────────────────────────────── */
+        .total-row {
+            background: #fde8e8 !important;
+            border-top: 2px solid #C0392B !important;
+        }
+
+        .total-row td {
+            font-weight: 700;
+            color: #C0392B;
+            font-size: 11px;
+            border-color: #f5c0bc !important;
+        }
+
+        /* ── FOOTER ─────────────────────────────────── */
+        .footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-top: 1px solid #f0dada;
+            padding-top: 12px;
+        }
+
+        .footer-note {
+            font-size: 9.5px;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        .ttd-area {
+            text-align: center;
+            font-size: 10.5px;
+            color: #555;
+        }
+
+        .ttd-area .ttd-box {
+            width: 150px;
+            border-bottom: 1px solid #555;
+            margin: 50px auto 4px;
+        }
+
+        .ttd-area .ttd-label {
+            font-size: 10px;
+            color: #888;
+        }
+
+        /* ── NO DATA ────────────────────────────────── */
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #aaa;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── HEADER ── -->
+    <div class="header">
+        <div class="header-left">
+            <h1>LAPORAN BARANG RUSAK</h1>
+            <p>Sistem Informasi Sarana dan Prasarana</p>
+        </div>
+        <div class="header-right">
+            <div><span class="label">Dicetak &nbsp;:</span> {{printDate}}</div>
+        </div>
+    </div>
+
+    <!-- ── INFO CARDS ── -->
+    <div class="info-cards">
+        <div class="card">
+            <div class="card-label">Total Data</div>
+            <div class="card-value">{{totalBarangRusak}}</div>
+            <div class="card-sub">item barang rusak tercatat</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Total Kerusakan</div>
+            <div class="card-value">{{totalJumlahRusak}}</div>
+            <div class="card-sub">unit barang dilaporkan rusak</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Dicetak Pada</div>
+            <div class="card-value" style="font-size:11px;">{{printDate}}</div>
+            <div class="card-sub">tanggal cetak laporan</div>
+        </div>
+    </div>
+
+    <!-- ── TABLE ── -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px;">No</th>
+                <th style="width:90px;">Kode Barang</th>
+                <th>Nama Barang</th>
+                <th style="width:100px;">Cabang</th>
+                <th style="width:90px;">Ruangan</th>
+                <th style="width:50px;">Jml Rusak</th>
+                <th style="width:90px;">Tingkat Kerusakan</th>
+                <th style="width:100px;">Tgl Rusak</th>
+                <th>Keterangan</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{tableRows}}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="5" class="right">TOTAL</td>
+                <td class="center">{{totalJumlahRusak}} unit</td>
+                <td colspan="3"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- ── FOOTER ── -->
+    <div class="footer">
+        <div class="footer-note">
+            * Laporan ini digenerate secara otomatis oleh sistem.<br/>
+            * Data yang ditampilkan merupakan snapshot pada saat pencatatan dilakukan.
+        </div>
+        <div class="ttd-area">
+            <div class="ttd-box"></div>
+            <div>Mengetahui,</div>
+            <div class="ttd-label">( _________________________ )</div>
+        </div>
+    </div>
+
+</body>
+</html>

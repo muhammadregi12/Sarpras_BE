@@ -37,9 +37,28 @@ const upload = (folderName) => {
     storage,
     fileFilter,
     limits: {
-      fileSize: 2 * 1024 * 1024, // Maksimal 2MB
+      fileSize: 1 * 1024 * 1024, // Maksimal 1MB
     },
   });
 };
 
-module.exports = upload;
+const uploadExcel = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+      "application/vnd.ms-excel", // .xls
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Format file tidak didukung. Gunakan: XLSX atau XLS"), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Maksimal 5MB
+  },
+});
+
+module.exports = { upload, uploadExcel };

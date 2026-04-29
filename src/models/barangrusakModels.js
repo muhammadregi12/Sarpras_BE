@@ -24,6 +24,22 @@ const BarangRusak = sequelize.define("BarangRusak", {
             key: 'id',
         }
     },
+    cabang_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'cabang',
+            key: 'id',
+        }
+    },
+    ruang_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'ruangan',
+            key: 'id'
+        }
+    },
     jumlah_rusak: {
         type: DataTypes.INTEGER,
         allowNull: false,

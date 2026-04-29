@@ -3,10 +3,13 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "mysql2": "^3.20.0",
+    "puppeteer": "^24.42.0",
+    "qrcode": "^1.5.4",
     "sequelize": "^6.37.8"
   },
   "name": "sarpras",

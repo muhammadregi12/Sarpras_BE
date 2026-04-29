@@ -5,9 +5,11 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 
 router.use(authMiddleware)
 
+router.get('/export/pdf', supplierController.exportPDFSupplier);
+router.get('/export/excel', supplierController.exportExcelSupplier);
 router.get('/', supplierController.getAllSupplier);
-router.get('/:id', supplierController.getSupplierById);
 router.post('/', supplierController.createSupplier);
+router.get('/:id', supplierController.getSupplierById);
 router.put('/:id', supplierController.updateSupplier);
 router.delete('/:id', supplierController.deleteSupplier);
 
