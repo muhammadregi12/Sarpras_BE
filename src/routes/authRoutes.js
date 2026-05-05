@@ -4,7 +4,6 @@ const authContoller = require('../controllers/authController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { upload }  = require('../middleware/uploadMiddleware');
 
-
 router.post('/login', authContoller.login);
 router.post('/logout', authMiddleware, authContoller.logout);
 router.get('/profile', authMiddleware, authContoller.getProfile);

@@ -4,7 +4,7 @@ const barangController = require('../controllers/barangController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { upload } = require('../middleware/uploadMiddleware');
 
-router.use(authMiddleware)
+// router.use(authMiddleware)
 
 router.get('/', barangController.getAllBarang);
 router.get('/export/pdf', barangController.exportPDFBarang);

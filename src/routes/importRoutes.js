@@ -4,11 +4,15 @@ const importController = require('../controllers/importController');
 const { uploadExcel } = require('../middleware/uploadMiddleware');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
-router.use(authMiddleware)
+// router.use(authMiddleware)
 
 // Route to handle file upload and import
 router.post('/barang/excel', uploadExcel.single('file'), importController.importBarang);
 router.post('/supplier/excel', uploadExcel.single('file'), importController.importSupplier);
 router.post('/cabang/excel', uploadExcel.single('file'), importController.importCabang);
+
+router.get('/barang/template',   importController.downloadTemplateBarang);
+router.get('/supplier/template', importController.downloadTemplateSupplier);
+router.get('/cabang/template',   importController.downloadTemplateCabang);
 
 module.exports = router;

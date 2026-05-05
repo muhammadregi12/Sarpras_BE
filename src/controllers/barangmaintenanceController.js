@@ -18,15 +18,14 @@ exports.getAllBarangMaintenance = async (req, res) => {
                     model: Barang,
                     as: "barang",
                     attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
+                },
                 {
                     model: User,
                     as: "user",
                     attributes: ["id", "name"]
                 }
             ],
+            
         });
 
         return res.status(200).json({
@@ -55,15 +54,13 @@ exports.getBarangMaintenanceById = async (req, res) => {
                     model: Barang,
                     as: "barang",
                     attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
+                },
                 {
                     model: User,
                     as: "user",
                     attributes: ["id", "name"]
                 }
-            ]
+            ],
         })
         
         return res.status(200).json({

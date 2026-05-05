@@ -22,23 +22,17 @@ exports.getAllBarangMasuk = async (req, res) => {
                     model: Barang,
                     as: "barang",
                     attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
+                },
                 {
                     model: Supplier,
                     as: "supplier",
                     attributes: ["id", "name_supplier"]
-                }
-            ],
-            include: [
+                },
                 {
                     model: User,
                     as: "user",
                     attributes: ["id", "name"]
-                }
-            ],  
-            include: [
+                },
                 {
                     model: Cabang,
                     as: "cabang",

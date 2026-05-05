@@ -5,6 +5,60 @@ const Kategori = require('../models/kategoriModels');
 const Cabang = require('../models/cabangModels');
 const Supplier = require('../models/supplierModels');
 
+function setHeaderRow(worksheet, headers, headerRowNumber = 4) {
+    const headerRow = worksheet.getRow(headerRowNumber);
+    headers.forEach((h, i) => {
+        const cell = headerRow.getCell(i + 1);
+        cell.value = h;
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E75B6' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+            top:    { style: 'thin' },
+            left:   { style: 'thin' },
+            bottom: { style: 'thin' },
+            right:  { style: 'thin' },
+        };
+    });
+    headerRow.height = 20;
+    headerRow.commit();
+}
+
+function setTitleRows(worksheet, title, columnCount) {
+    // Row 1: Judul
+    worksheet.mergeCells(1, 1, 1, columnCount);
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = title;
+    titleCell.font  = { bold: true, size: 14 };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(1).height = 25;
+
+    // Row 2: Tanggal cetak
+    worksheet.mergeCells(2, 1, 2, columnCount);
+    const dateCell = worksheet.getCell('A2');
+    dateCell.value = `Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    })}`;
+    dateCell.alignment = { horizontal: 'center' };
+
+    // Row 3: Kosong (spacer)
+    worksheet.getRow(3).height = 8;
+}
+
+function styleDataRow(row, columnCount) {
+    for (let col = 1; col <= columnCount; col++) {
+        const cell = row.getCell(col);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } };
+        cell.border = {
+            top:    { style: 'thin' },
+            left:   { style: 'thin' },
+            bottom: { style: 'thin' },
+            right:  { style: 'thin' },
+        };
+        cell.font = { italic: true, color: { argb: 'FF808080' } };
+    }
+}
+
 exports.importBarang = async (req, res) => {
     try {
         if (!req.file) {
@@ -341,5 +395,205 @@ exports.importSupplier = async (req, res) => {
             message: "Internal Server Error",
             error: error.message,
         });
+    }
+};
+
+exports.downloadTemplateBarang = async (req, res) => {
+    try {
+        const workbook  = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template Barang');
+
+        const headers = [
+            'No', 'Kode Barang', 'Nama', 'Kategori',
+            'Ruangan', 'Cabang', 'Jumlah', 'Satuan',
+            'Tahun Pengadaan', 'Keterangan'
+        ];
+
+        setTitleRows(worksheet, 'TEMPLATE IMPORT DATA BARANG', headers.length);
+        setHeaderRow(worksheet, headers, 4);
+
+        // Contoh baris data
+        const exampleRow = worksheet.getRow(5);
+        exampleRow.values = [
+            1, 'BRG-001', 'Kursi Kantor', 'Furniture',
+            'Ruang Rapat', 'Cabang Jakarta', 5, 'Unit',
+            '2024', 'Kondisi baik'
+        ];
+        styleDataRow(exampleRow, headers.length);
+        exampleRow.commit();
+
+        // Lebar kolom
+        const colWidths = [6, 16, 25, 18, 18, 18, 10, 12, 18, 25];
+        colWidths.forEach((w, i) => {
+            worksheet.getColumn(i + 1).width = w;
+        });
+
+        // Sheet petunjuk
+        const petunjuk = workbook.addWorksheet('Petunjuk');
+        const notes = [
+            ['PETUNJUK PENGISIAN TEMPLATE BARANG'],
+            [''],
+            ['Kolom', 'Keterangan', 'Wajib?'],
+            ['No',              'Nomor urut (angka)',                                         'Ya'],
+            ['Kode Barang',     'Kode unik barang (tidak boleh duplikat)',                    'Ya'],
+            ['Nama',            'Nama lengkap barang',                                       'Ya'],
+            ['Kategori',        'Nama kategori (harus sesuai data di sistem)',                'Ya'],
+            ['Ruangan',         'Nama ruangan (harus sesuai data di sistem)',                 'Ya'],
+            ['Cabang',          'Nama cabang (harus sesuai data di sistem)',                  'Ya'],
+            ['Jumlah',          'Jumlah barang (angka)',                                      'Tidak'],
+            ['Satuan',          'Satuan barang, misal: Unit, Buah, Set',                      'Ya'],
+            ['Tahun Pengadaan', 'Tahun pengadaan, misal: 2024',                               'Ya'],
+            ['Keterangan',      'Keterangan tambahan (opsional)',                             'Tidak'],
+            [''],
+            ['CATATAN:'],
+            ['- Data dimulai dari baris ke-5 (baris 1-4 adalah judul & header, jangan dihapus)'],
+            ['- Nama Kategori, Ruangan, dan Cabang harus PERSIS sama dengan data yang ada di sistem'],
+            ['- Kode Barang harus unik, tidak boleh ada duplikat'],
+        ];
+        notes.forEach((r, i) => {
+            const row = petunjuk.getRow(i + 1);
+            r.forEach((v, j) => { row.getCell(j + 1).value = v; });
+            if (i === 0) { row.getCell(1).font = { bold: true, size: 13 }; }
+            if (i === 2) {
+                ['A','B','C'].forEach(col => {
+                    petunjuk.getCell(`${col}${i+1}`).font = { bold: true };
+                });
+            }
+            row.commit();
+        });
+        petunjuk.getColumn(1).width = 20;
+        petunjuk.getColumn(2).width = 55;
+        petunjuk.getColumn(3).width = 10;
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=template_import_barang.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        return res.status(500).json({ message: 'Gagal generate template', error: error.message });
+    }
+};
+
+exports.downloadTemplateCabang = async (req, res) => {
+    try {
+        const workbook  = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template Cabang');
+
+        const headers = ['No', 'Nama Cabang', 'Daerah Cabang'];
+
+        setTitleRows(worksheet, 'TEMPLATE IMPORT DATA CABANG', headers.length);
+        setHeaderRow(worksheet, headers, 4);
+
+        // Contoh baris data
+        const exampleRow = worksheet.getRow(5);
+        exampleRow.values = [1, 'Cabang Jakarta', 'DKI Jakarta'];
+        styleDataRow(exampleRow, headers.length);
+        exampleRow.commit();
+
+        worksheet.getColumn(1).width = 6;
+        worksheet.getColumn(2).width = 25;
+        worksheet.getColumn(3).width = 25;
+
+        // Sheet petunjuk
+        const petunjuk = workbook.addWorksheet('Petunjuk');
+        const notes = [
+            ['PETUNJUK PENGISIAN TEMPLATE CABANG'],
+            [''],
+            ['Kolom', 'Keterangan', 'Wajib?'],
+            ['No',           'Nomor urut (angka)',                          'Ya'],
+            ['Nama Cabang',  'Nama cabang (tidak boleh duplikat)',           'Ya'],
+            ['Daerah Cabang','Daerah/kota lokasi cabang',                   'Ya'],
+            [''],
+            ['CATATAN:'],
+            ['- Data dimulai dari baris ke-5 (baris 1-4 adalah judul & header, jangan dihapus)'],
+            ['- Nama Cabang harus unik, tidak boleh ada duplikat'],
+        ];
+        notes.forEach((r, i) => {
+            const row = petunjuk.getRow(i + 1);
+            r.forEach((v, j) => { row.getCell(j + 1).value = v; });
+            if (i === 0) { row.getCell(1).font = { bold: true, size: 13 }; }
+            if (i === 2) {
+                ['A','B','C'].forEach(col => {
+                    petunjuk.getCell(`${col}${i+1}`).font = { bold: true };
+                });
+            }
+            row.commit();
+        });
+        petunjuk.getColumn(1).width = 16;
+        petunjuk.getColumn(2).width = 45;
+        petunjuk.getColumn(3).width = 10;
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=template_import_cabang.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        return res.status(500).json({ message: 'Gagal generate template', error: error.message });
+    }
+};
+
+exports.downloadTemplateSupplier = async (req, res) => {
+    try {
+        const workbook  = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template Supplier');
+
+        const headers = ['No', 'Nama Supplier', 'Perusahaan', 'Alamat Perusahaan', 'No. Telepon'];
+
+        setTitleRows(worksheet, 'TEMPLATE IMPORT DATA SUPPLIER', headers.length);
+        setHeaderRow(worksheet, headers, 4);
+
+        // Contoh baris data
+        const exampleRow = worksheet.getRow(5);
+        exampleRow.values = [1, 'Budi Santoso', 'PT Maju Bersama', 'Jl. Sudirman No. 10, Jakarta', '081234567890'];
+        styleDataRow(exampleRow, headers.length);
+        exampleRow.commit();
+
+        worksheet.getColumn(1).width = 6;
+        worksheet.getColumn(2).width = 22;
+        worksheet.getColumn(3).width = 25;
+        worksheet.getColumn(4).width = 35;
+        worksheet.getColumn(5).width = 18;
+
+        // Sheet petunjuk
+        const petunjuk = workbook.addWorksheet('Petunjuk');
+        const notes = [
+            ['PETUNJUK PENGISIAN TEMPLATE SUPPLIER'],
+            [''],
+            ['Kolom', 'Keterangan', 'Wajib?'],
+            ['No',               'Nomor urut (angka)',                                       'Ya'],
+            ['Nama Supplier',    'Nama lengkap supplier',                                    'Ya'],
+            ['Perusahaan',       'Nama perusahaan supplier',                                 'Ya'],
+            ['Alamat Perusahaan','Alamat lengkap perusahaan',                                'Ya'],
+            ['No. Telepon',      'Format: diawali 08 dan total 10-12 digit, misal: 081234567890', 'Ya'],
+            [''],
+            ['CATATAN:'],
+            ['- Data dimulai dari baris ke-5 (baris 1-4 adalah judul & header, jangan dihapus)'],
+            ['- Kombinasi Nama Supplier + Perusahaan harus unik, tidak boleh duplikat'],
+            ['- No. Telepon harus diawali 08 dan terdiri dari 10-12 digit angka'],
+        ];
+        notes.forEach((r, i) => {
+            const row = petunjuk.getRow(i + 1);
+            r.forEach((v, j) => { row.getCell(j + 1).value = v; });
+            if (i === 0) { row.getCell(1).font = { bold: true, size: 13 }; }
+            if (i === 2) {
+                ['A','B','C'].forEach(col => {
+                    petunjuk.getCell(`${col}${i+1}`).font = { bold: true };
+                });
+            }
+            row.commit();
+        });
+        petunjuk.getColumn(1).width = 20;
+        petunjuk.getColumn(2).width = 60;
+        petunjuk.getColumn(3).width = 10;
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=template_import_supplier.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        return res.status(500).json({ message: 'Gagal generate template', error: error.message });
     }
 };

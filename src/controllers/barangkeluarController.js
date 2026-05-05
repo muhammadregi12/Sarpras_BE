@@ -18,19 +18,15 @@ exports.getAllBarangKeluar = async (req, res) => {
             attributes: ["id", "jumlah_keluar", "tanggal_keluar", "keterangan"],
             include: [
                 {
-                    model: Barang,
-                    as: "barang",
-                    attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
-                {
                     model: User,
                     as: "user",
                     attributes: ["id", "name"]
-                }
-            ],
-            include: [
+                },
+                {
+                    model: Barang,
+                    as: "barang",
+                    attributes: ["id", "name", "kode_barang"]
+                },
                 {
                     model: Cabang,
                     as: "cabang",
@@ -70,19 +66,15 @@ exports.getBarangKeluarById = async (req, res) => {
         const barangKeluar = await BarangKeluar.findByPk(req.params.id, {
             include: [
                 {
-                    model: Barang,
-                    as: "barang",
-                    attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
-                {
                     model: User,
                     as: "user",
                     attributes: ["id", "name"]
-                }
-            ],
-            include: [
+                },
+                {
+                    model: Barang,
+                    as: "barang",
+                    attributes: ["id", "name", "kode_barang"]
+                },
                 {
                     model: Cabang,
                     as: "cabang",
@@ -93,7 +85,7 @@ exports.getBarangKeluarById = async (req, res) => {
                     as: "ruangan",
                     attributes: ["id", "name_ruangan"]
                 }
-            ]
+            ],
         });
 
         return res.status(200).json({

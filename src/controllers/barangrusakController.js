@@ -21,9 +21,7 @@ exports.getAllBarangRusak = async (req, res) => {
                     model: Barang,
                     as: "barang",
                     attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
+                },
                 {
                     model: User,
                     as: "user",
@@ -39,7 +37,7 @@ exports.getAllBarangRusak = async (req, res) => {
                     as: "ruangan",
                     attributes: ["id", "name_ruangan"]
                 }
-            ]
+            ],
         })
 
         return res.status(200).json({
@@ -68,9 +66,7 @@ exports.getBarangRusakById = async (req, res) => {
                     model: Barang,
                     as: "barang",
                     attributes: ["id", "name", "kode_barang"]
-                }
-            ],
-            include: [
+                },
                 {
                     model: User,
                     as: "user",
@@ -86,7 +82,7 @@ exports.getBarangRusakById = async (req, res) => {
                     as: "ruangan",
                     attributes: ["id", "name_ruangan"]
                 }
-            ]
+            ],
         })
 
         return res.status(200).json({

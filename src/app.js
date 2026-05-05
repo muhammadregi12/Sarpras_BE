@@ -18,13 +18,12 @@ const barangMaintenanceRoutes = require('./routes/barangmaintenanceRoutes');
 const barangrusakRoutes = require('./routes/barangrusakRoutes');
 const importRoutes = require('./routes/importRoutes')
 const laporanbarangRoutes = require('./routes/laporanRoutes')
-// const laporanbarangmasukRoutes = require('./routes/laporan/laporanbarangmasukRoutes')
 const scanRoutes = require('./routes/scanRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes')
 
 // cors
 app.use(cors({
-    origin: "http://localhost:1076",
+    origin: "http://localhost:5173",
     credentials: true
 }))
 
@@ -47,7 +46,6 @@ app.use("/api/barangrusak", barangrusakRoutes);
 app.use("/api/barangmaintenance", barangMaintenanceRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/laporan", laporanbarangRoutes);
-// app.use("/api/laporanbarangmasuk", laporanbarangmasukRoutes);
 app.use("/api/scan", scanRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
