@@ -16,6 +16,8 @@ const Barang = sequelize.define("Barang", {
     ruangan_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
         references: {
             model: 'ruangan',
             key: 'id',
@@ -24,6 +26,8 @@ const Barang = sequelize.define("Barang", {
     cabang_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
         references: {
             model: 'cabang',
             key: 'id',
@@ -32,6 +36,8 @@ const Barang = sequelize.define("Barang", {
     kategori_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
         references: {
             model: 'kategori',
             key: 'id',

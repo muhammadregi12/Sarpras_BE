@@ -1,8 +1,10 @@
 const BarangMaintenance = require("../models/barangmaintenanceModels");
+const BarangRusak = require("../models/barangrusakModels");
 const Barang = require("../models/barangModels");
 const User = require("../models/userModels");
 const { generatePDF } = require("../services/exportPdf");
 const ExcelJS = require("exceljs");
+const sequelize = require("../config/database");
 
 exports.getAllBarangMaintenance = async (req, res) => {
     try {
@@ -12,7 +14,7 @@ exports.getAllBarangMaintenance = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const barangMaintenance = await BarangMaintenance.findAndCountAll({
-            attributes: ["id", "tanggal_maintenance", "status", "keterangan"],
+            attributes: ["id", "tanggal_maintenance", "status", "keterangan", "jumlah_maintenance", "tanggal_selesai", "jumlah_selesai", "jumlah_rusak_hasil", "biaya"],
             include: [
                 {
                     model: Barang,
@@ -25,7 +27,9 @@ exports.getAllBarangMaintenance = async (req, res) => {
                     attributes: ["id", "name"]
                 }
             ],
-            
+            limit,
+            offset,
+            order: [['tanggal_maintenance', 'DESC']]        
         });
 
         return res.status(200).json({
@@ -62,6 +66,12 @@ exports.getBarangMaintenanceById = async (req, res) => {
                 }
             ],
         })
+
+        if (!barangMaintenance) {
+            return res.status(404).json({
+                message: "Barang Maintenance tidak ditemukan"
+            })
+        }
         
         return res.status(200).json({
             message: "Get Barang Maintenance By Id",
@@ -81,9 +91,9 @@ exports.createBarangMaintenance = async (req, res) => {
         
         const { barang_id, tanggal_maintenance, jumlah_maintenance, status, keterangan, biaya } = req.body;
 
-        if (!barang_id || !tanggal_maintenance || !jumlah_maintenance || !status) {
+        if (!barang_id || !tanggal_maintenance || !jumlah_maintenance) {
             return res.status(400).json({
-                message: "Barang ID, Tanggal Maintenance, jumlah maintenance dan Status harus diisi"
+                message: "Barang ID, Tanggal Maintenance, jumlah maintenance harus diisi"
             })
         }
 
@@ -104,7 +114,7 @@ exports.createBarangMaintenance = async (req, res) => {
             barang_id,
             tanggal_maintenance,
             jumlah_maintenance,
-            status,
+            status: "maintenance",
             user_id: req.user.id,
             keterangan,
             biaya
@@ -140,6 +150,12 @@ exports.updateBarangMaintenance = async (req, res) => {
         if (!barangMaintenance) {
             return res.status(404).json({
                 message: "Barang Maintenance tidak ditemukan"
+            });
+        }
+
+        if (barangMaintenance.status === "selesai") {
+            return res.status(400).json({
+                message: "Barang maintenance sudah selesai, tidak bisa diupdate"
             });
         }
 
@@ -211,83 +227,123 @@ exports.updateBarangMaintenance = async (req, res) => {
 };
 
 exports.updateStatusBarangMaintenance = async (req, res) => {
+    const t = await sequelize.transaction();
     try {
-        
-        const { status, tanggal_selesai, jumlah_selesai, jumlah_rusak_hasil, tingkat_kerusakan } = req.body;
+        const { tanggal_selesai, jumlah_selesai, jumlah_rusak_hasil, tingkat_kerusakan } = req.body;
 
-        if (!tanggal_selesai) {
-            return res.status(400).json({
-                message: "Status dan Tanggal Selesai harus diisi"
-            })
+        if (!req.user) {
+            await t.rollback();
+            return res.status(401).json({
+                message: "Unauthorized: user tidak ditemukan"
+            });
         }
 
-        const barangMaintenance = await BarangMaintenance.findByPk(req.params.id);
+        if (!tanggal_selesai) {
+            await t.rollback();
+            return res.status(400).json({
+                message: "Tanggal Selesai harus diisi"
+            });
+        }
+
+        const barangMaintenance = await BarangMaintenance.findByPk(req.params.id, { transaction: t });
         if (!barangMaintenance) {
+            await t.rollback();
             return res.status(404).json({
                 message: "Barang Maintenance tidak ditemukan"
-            })
+            });
         }
 
         if (barangMaintenance.status === "selesai") {
+            await t.rollback();
             return res.status(400).json({
                 message: "Barang maintenance sudah selesai, tidak bisa update status"
-            })
+            });
+        }
+
+        const tglMaintenance = new Date(barangMaintenance.tanggal_maintenance);
+        const tglSelesai = new Date(tanggal_selesai);
+        if (tglSelesai < tglMaintenance) {
+            await t.rollback();
+            return res.status(400).json({
+                message: "Tanggal selesai tidak boleh lebih awal dari tanggal maintenance"
+            });
         }
 
         const totalMaintenance = parseInt(barangMaintenance.jumlah_maintenance);
-        const selesai = parseInt(jumlah_selesai)
-        const rusak = parseInt(jumlah_rusak_hasil)
+        const selesai = parseInt(jumlah_selesai) || 0;
+        const rusak = parseInt(jumlah_rusak_hasil) || 0;
+
+        if (selesai + rusak === 0) {
+            await t.rollback();
+            return res.status(400).json({
+                message: "Jumlah selesai atau rusak harus lebih dari 0"
+            });
+        }
 
         if (selesai + rusak > totalMaintenance) {
+            await t.rollback();
             return res.status(400).json({
                 message: "Jumlah selesai dan rusak melebihi jumlah maintenance"
-            })
+            });
         }
 
-        const barang = await Barang.findByPk(barangMaintenance.barang_id);
+        const barang = await Barang.findByPk(barangMaintenance.barang_id, { transaction: t });
+        if (!barang) {
+            await t.rollback();
+            return res.status(404).json({
+                message: "Barang tidak ditemukan"
+            });
+        }
 
-        if(selesai > 0 && barang) {
+        // Kembalikan stok barang yang berhasil diperbaiki
+        if (selesai > 0) {
             barang.jumlah += selesai;
-            await barang.save();
+            await barang.save({ transaction: t });
         }
 
-        if(rusak > 0 ) {
-            if(!tingkat_kerusakan) {
+        // Buat record barang rusak jika ada yang tidak bisa diperbaiki
+        if (rusak > 0) {
+            if (!tingkat_kerusakan) {
+                await t.rollback();
                 return res.status(400).json({
                     message: "Tingkat kerusakan harus diisi jika ada barang yang rusak"
-                })
-        }
+                });
+            }
 
             await BarangRusak.create({
                 barang_id: barangMaintenance.barang_id,
                 jumlah_rusak: rusak,
                 tanggal_rusak: tanggal_selesai,
                 tingkat_kerusakan,
-                keterangan: `Barang rusak dari maintenance dengan id ${barangMaintenance.id}`,
-                user_id: req.user.id
-            })
+                keterangan: `Barang rusak dari maintenance dengan ID ${barangMaintenance.id}`,
+                user_id: req.user.id,
+                cabang_id: barang.cabang_id,
+                ruangan_id: barang.ruangan_id
+            }, { transaction: t });
         }
 
-
-        const updateStatusBarangMaintenance = await barangMaintenance.update({
+        const updated = await barangMaintenance.update({
             status: "selesai",
             tanggal_selesai,
             jumlah_selesai: selesai,
             jumlah_rusak_hasil: rusak,
-        });
+        }, { transaction: t });
+
+        await t.commit();
 
         return res.status(200).json({
             message: "Update status barang maintenance berhasil",
-            data: updateStatusBarangMaintenance
-        })
+            data: updated
+        });
 
     } catch (error) {
+        await t.rollback();
         return res.status(500).json({
             message: "Internal Server Error",
             error: error.message
-        })
+        });
     }
-}
+};
 
 exports.deleteBarangMaintenance = async (req, res) => {
     try {

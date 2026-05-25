@@ -1,7 +1,5 @@
-const Ruangan   = require("../models/ruanganModels");
-const Barang    = require("../models/barangModels");
-const Cabang    = require("../models/cabangModels");
 const Kategori  = require("../models/kategoriModels");
+const { BarangMasuk, Supplier, Cabang, Ruangan, User, Barang, BarangKeluar, BarangRusak, BarangMaintenance } = require("../models/relasiModels");
 const { generatePDF } = require("../services/exportPdf");
 const QRCode    = require("qrcode");
 
@@ -45,7 +43,7 @@ exports.getDetailRuangan = async (req, res) => {
 exports.getQRCodeRuangan = async (req, res) => {
     try {
         const { id }  = req.params;
-        const baseUrl = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
         const ruangan = await Ruangan.findByPk(id);
         if (!ruangan) return res.status(404).json({ message: "Ruangan tidak ditemukan" });
@@ -75,7 +73,7 @@ exports.getQRCodeRuangan = async (req, res) => {
 exports.downloadQRCodeRuangan = async (req, res) => {
     try {
         const { id }  = req.params;
-        const baseUrl = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
         const ruangan = await Ruangan.findByPk(id);
         if (!ruangan) return res.status(404).json({ message: "Ruangan tidak ditemukan" });
@@ -106,7 +104,7 @@ exports.downloadQRCodeRuangan = async (req, res) => {
 
 exports.getAllQRCodes = async (req, res) => {
     try {
-        const baseUrl     = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl     = process.env.FRONTEND_URL || "http://localhost:5173";
         const ruanganList = await Ruangan.findAll({ order: [["kode_ruangan", "ASC"]] });
 
         const result = await Promise.all(
@@ -142,7 +140,7 @@ exports.getAllQRCodes = async (req, res) => {
 exports.exportPDFDetailRuangan = async (req, res) => {
     try {
         const { id }  = req.params;
-        const baseUrl = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
         const ruangan = await Ruangan.findByPk(id);
         if (!ruangan) return res.status(404).json({ message: "Ruangan tidak ditemukan" });
@@ -184,7 +182,7 @@ exports.exportPDFDetailRuangan = async (req, res) => {
                     <td class="center">${d.jumlah ?? 0}</td>
                     <td class="center">${d.satuan ?? "-"}</td>
                     <td class="center">${kondisiBadge}</td>
-                    <td class="center">${formatTanggal(d.createdAt)}</td>
+                    <td class="center">${formatTanggal}</td>
                 </tr>
             `;
         }).join("");
@@ -217,35 +215,146 @@ exports.exportPDFDetailRuangan = async (req, res) => {
 // ========== BARANG QR CODE FUNCTIONS ==========
 
 exports.getDetailBarang = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
+    const withHistory = req.query.with_history !== "false";
+    const historyLimitRaw = Number(req.query.history_limit || 5);
+    const historyLimit = Number.isFinite(historyLimitRaw)
+      ? Math.min(Math.max(historyLimitRaw, 1), 50)
+      : 5;
 
-        const barang = await Barang.findByPk(id, {
-            include: [
-                { model: Ruangan, as: "ruangan", attributes: ["id", "name_ruangan", "kode_ruangan"], required: false },
-                { model: Kategori, as: "kategori", attributes: ["id", "name_kategori"], required: false },
-                { model: Cabang, as: "cabang", attributes: ["id", "name_cabang"], required: false },
-            ],
-        });
+    const barang = await Barang.findByPk(id, {
+  include: [
+    { model: Ruangan, as: "ruangan", attributes: ["id", "name_ruangan", "kode_ruangan"], required: false },
+    { model: Kategori, as: "kategori", attributes: ["id", "name_kategori"], required: false },
+    { model: Cabang, as: "cabang", attributes: ["id", "name_cabang"], required: false },
+    { model: Supplier, as: "supplier", attributes: ["id", "name_supplier"], required: false },
+    { model: BarangMasuk, as: "barang_masuk", attributes: ["id", "harga_satuan"], required: false },
+  ],
+});
 
-        if (!barang) {
-            return res.status(404).json({ message: "Barang tidak ditemukan" });
-        }
+if (!barang) return res.status(404).json({ message: "Barang tidak ditemukan" });
 
-        return res.status(200).json({
-            message: "Detail Barang",
-            data: barang.toJSON(),
-        });
+const [
+  totalMasuk,
+  totalKeluar,
+  totalRusak,
+  totalMaintenance,
+  historyMasuk,
+  historyKeluar,
+  historyRusak,
+  historyMaintenance,
+] = await Promise.all([
+  BarangMasuk.sum("jumlah", { where: { barang_id: id } }),
+  BarangKeluar.sum("jumlah_keluar", { where: { barang_id: id } }),
+  BarangRusak.sum("jumlah_rusak", { where: { barang_id: id } }),
+  BarangMaintenance.sum("jumlah_maintenance", { where: { barang_id: id } }),
 
-    } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
+  withHistory
+    ? BarangMasuk.findAll({
+        where: { barang_id: id },
+        attributes: ["id", "jumlah", "harga_satuan", "tanggal_masuk", "keterangan"],
+        include: [
+          { model: Supplier, as: "supplier", attributes: ["id", "name_supplier"], required: false },
+          { model: Cabang, as: "cabang", attributes: ["id", "name_cabang"], required: false },
+          { model: Ruangan, as: "ruangan", attributes: ["id", "name_ruangan"], required: false },
+          { model: User, as: "user", attributes: ["id", "name"], required: false },
+        ],
+        order: [["tanggal_masuk", "DESC"], ["id", "DESC"]],
+        limit: historyLimit,
+      })
+    : Promise.resolve([]),
+
+  withHistory
+    ? BarangKeluar.findAll({
+        where: { barang_id: id },
+        attributes: ["id", "jumlah_keluar", "tanggal_keluar", "keterangan"],
+        include: [
+          { model: Cabang, as: "cabang", attributes: ["id", "name_cabang"], required: false },
+          { model: Ruangan, as: "ruangan", attributes: ["id", "name_ruangan"], required: false },
+          { model: User, as: "user", attributes: ["id", "name"], required: false },
+        ],
+        order: [["tanggal_keluar", "DESC"], ["id", "DESC"]],
+        limit: historyLimit,
+      })
+    : Promise.resolve([]),
+
+  withHistory
+    ? BarangRusak.findAll({
+        where: { barang_id: id },
+        attributes: ["id", "jumlah_rusak", "tingkat_kerusakan", "tanggal_rusak", "keterangan"],
+        include: [
+          { model: Cabang, as: "cabang", attributes: ["id", "name_cabang"], required: false },
+          { model: Ruangan, as: "ruangan", attributes: ["id", "name_ruangan"], required: false },
+          { model: User, as: "user", attributes: ["id", "name"], required: false },
+        ],
+        order: [["tanggal_rusak", "DESC"], ["id", "DESC"]],
+        limit: historyLimit,
+      })
+    : Promise.resolve([]),
+
+  withHistory
+    ? BarangMaintenance.findAll({
+        where: { barang_id: id },
+        attributes: [
+          "id",
+          "jumlah_maintenance",
+          "tanggal_maintenance",
+          "tanggal_selesai",
+          "status",
+          "biaya",
+          "keterangan",
+        ],
+        include: [
+          { model: User, as: "user", attributes: ["id", "name"], required: false },
+        //   { model: Cabang, as: "cabang", attributes: ["id", "name_cabang"], required: false },
+        //   { model: Ruangan, as: "ruangan", attributes: ["id", "name_ruangan"], required: false },
+        ],
+        order: [["tanggal_maintenance", "DESC"], ["id", "DESC"]],
+        limit: historyLimit,
+      })
+    : Promise.resolve([]),
+]);
+
+const masuk = Number(totalMasuk || 0);
+const keluar = Number(totalKeluar || 0);
+const rusak = Number(totalRusak || 0);
+const maintenance = Number(totalMaintenance || 0);
+
+return res.status(200).json({
+  message: "Detail Barang",
+  data: {
+    ...barang.toJSON(),
+    summary: {
+      total_masuk: masuk,
+      total_keluar: keluar,
+      total_rusak: rusak,
+      total_maintenance: maintenance,
+      stok_tersedia: Math.max(masuk - keluar - rusak, 0),
+    },
+    histories: {
+      masuk: historyMasuk,
+      keluar: historyKeluar,
+      rusak: historyRusak,
+      maintenance: historyMaintenance,
+    },
+  },
+  meta: { with_history: withHistory, history_limit: historyLimit },
+});
+
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
 };
 
 exports.getQRCodeBarang = async (req, res) => {
     try {
         const { id } = req.params;
-        const baseUrl = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
         const barang = await Barang.findByPk(id);
         if (!barang) return res.status(404).json({ message: "Barang tidak ditemukan" });
@@ -275,7 +384,7 @@ exports.getQRCodeBarang = async (req, res) => {
 exports.downloadQRCodeBarang = async (req, res) => {
     try {
         const { id } = req.params;
-        const baseUrl = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
         const barang = await Barang.findByPk(id);
         if (!barang) return res.status(404).json({ message: "Barang tidak ditemukan" });
@@ -305,7 +414,7 @@ exports.downloadQRCodeBarang = async (req, res) => {
 
 exports.getAllQRCodesBarang = async (req, res) => {
     try {
-        const baseUrl = req.query.base_url || process.env.FRONTEND_URL || "http://localhost:5173";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
         
         const barangList = await Barang.findAll({
             order: [["kode_barang", "ASC"]],

@@ -6,6 +6,7 @@ const { Op } = require("sequelize");
 const ExcelJS = require("exceljs");
 const Cabang = require("../models/cabangModels");
 const Ruangan = require("../models/ruanganModels");
+const BarangMaintenance = require("../models/barangmaintenanceModels");
 
 exports.getAllBarangRusak = async (req, res) => {
     try {
@@ -15,7 +16,7 @@ exports.getAllBarangRusak = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const barangRusak = await BarangRusak.findAndCountAll({
-            attributes: ["id", "jumlah_rusak", "tanggal_rusak", "keterangan"],
+            attributes: ["id", "jumlah_rusak", "tanggal_rusak", "keterangan", "tingkat_kerusakan"],
             include: [
                 {
                     model: Barang,
@@ -38,6 +39,9 @@ exports.getAllBarangRusak = async (req, res) => {
                     attributes: ["id", "name_ruangan"]
                 }
             ],
+            limit,
+            offset,
+            order: [['tanggal_rusak', 'DESC']]
         })
 
         return res.status(200).json({
@@ -155,12 +159,12 @@ exports.createBarangRusak = async (req, res) => {
 
 exports.updateBarangRusak = async (req, res) => {
     try {
-        const { barang_id, cabang_id, ruangan_id, jumlah_rusak, tingkat_kerusakan, tanggal_rusak, keterangan } = req.body;
+        const { tingkat_kerusakan, keterangan } = req.body;
 
-        if (!barang_id || !jumlah_rusak || !tanggal_rusak || !tingkat_kerusakan) {
+        if (!tingkat_kerusakan) {
             return res.status(400).json({
                 message: "Bad Request",
-                error: "Barang ID, Jumlah Rusak, Tanggal Rusak, dan Tingkat Rusak harus diisi"
+                error: "Tingkat kerusakan harus diisi"
             });
         }
 
@@ -169,63 +173,26 @@ exports.updateBarangRusak = async (req, res) => {
             return res.status(404).json({ message: "Barang Rusak Not Found" });
         }
 
-        const oldBarangId = parseInt(barangRusak.barang_id);
-        const newBarangId = parseInt(barang_id);
-        const oldJumlahRusak = parseInt(barangRusak.jumlah_rusak);
-        const newJumlahRusak = parseInt(jumlah_rusak);
-
-        if (oldBarangId !== newBarangId) {
-            const oldBarang = await Barang.findByPk(oldBarangId);
-            if (oldBarang) {
-                oldBarang.jumlah += oldJumlahRusak;
-                await oldBarang.save();
+        const adaMaintenance = await BarangMaintenance.findOne({
+            where: {
+                barang_id: barangRusak.barang_id,
+                status: 'maintenance'
             }
+        })
 
-            const newBarang = await Barang.findByPk(newBarangId);
-            if (!newBarang) {
-                return res.status(404).json({ message: "Barang Not Found" });
-            }
-
-            if (newBarang.jumlah < newJumlahRusak) {
-                return res.status(400).json({
-                    message: "Jumlah Rusak tidak boleh lebih besar dari jumlah barang yang tersedia"
-                });
-            }
-
-            newBarang.jumlah -= newJumlahRusak;
-            await newBarang.save();
-
-        } else {
-            const barang = await Barang.findByPk(newBarangId);
-            if (!barang) {
-                return res.status(404).json({ message: "Barang Not Found" });
-            }
-
-            const stokAktual = barang.jumlah + oldJumlahRusak;
-
-            if (stokAktual < newJumlahRusak) {
-                return res.status(400).json({
-                    message: "Jumlah Rusak tidak boleh lebih besar dari jumlah barang yang tersedia"
-                });
-            }
-
-            barang.jumlah = stokAktual - newJumlahRusak;
-            await barang.save();
+        if (adaMaintenance) {
+            return res.status(400).json({
+                message: "Tidak dapat mengupdate tingkat kerusakan karena barang sedang dalam maintenance"
+            });
         }
 
         const updatebarangRusak = await barangRusak.update({
-            user_id: req.user.id,
-            barang_id: newBarangId,
-            jumlah_rusak: newJumlahRusak,
             tingkat_kerusakan,
-            ruangan_id,
-            cabang_id,
-            tanggal_rusak,
             keterangan
         });
 
         return res.status(200).json({
-            message: "Update Barang Rusak",
+            message: "Sukses Update Barang Rusak",
             data: updatebarangRusak
         });
 
@@ -256,7 +223,7 @@ exports.deleteBarangRusak = async (req, res) => {
         await barangRusak.destroy();
 
         return res.status(200).json({
-            message: "Delete Barang Rusak",
+            message: "Sukses Delete Barang Rusak",
         })
     
     } catch (error) {

@@ -169,11 +169,11 @@ BarangKeluar.belongsTo(User, {
     foreignKey: "user_id",
     as: "user"
 });
-BarangKeluar.hasMany(Ruangan, {
+BarangKeluar.belongsTo(Ruangan, {
     foreignKey: "ruangan_id",
     as: "ruangan"
 })
-Ruangan.belongsTo(BarangKeluar, {
+Ruangan.hasMany(BarangKeluar, {
     foreignKey: "ruangan_id",
     as: "barang_keluar"
 });

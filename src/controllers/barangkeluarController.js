@@ -157,7 +157,7 @@ exports.createBarangKeluar = async (req, res) => {
 exports.updateBarangKeluar = async (req, res) => {
     try {
         const { id } = req.params;
-        const { barang_id, cabang_id, ruangan_id, jumlah_keluar, tanggal_keluar, keterangan } = req.body;
+        const { tanggal_keluar, keterangan } = req.body;
 
         const barangKeluar = await BarangKeluar.findByPk(id);
         if (!barangKeluar) {
@@ -166,56 +166,7 @@ exports.updateBarangKeluar = async (req, res) => {
             });
         }
 
-        const oldBarangId = parseInt(barangKeluar.barang_id);
-        const newBarangId = parseInt(barang_id);
-        const oldJumlahKeluar = parseInt(barangKeluar.jumlah_keluar);
-        const newJumlahKeluar = parseInt(jumlah_keluar);
-
-        if (oldBarangId !== newBarangId) {
-            const oldBarang = await Barang.findByPk(oldBarangId);
-            if (oldBarang) {
-                oldBarang.jumlah += oldJumlahKeluar;
-                await oldBarang.save();
-            }
-
-            const newBarang = await Barang.findByPk(newBarangId);
-            if (!newBarang) {
-                return res.status(404).json({ message: "Barang Not Found" });
-            }
-
-            if (newBarang.jumlah < newJumlahKeluar) {
-                return res.status(400).json({
-                    message: "Jumlah Keluar melebihi jumlah barang yang tersedia"
-                });
-            }
-
-            newBarang.jumlah -= newJumlahKeluar;
-            await newBarang.save();
-
-        } else {
-            const barang = await Barang.findByPk(newBarangId);
-            if (!barang) {
-                return res.status(404).json({ message: "Barang Not Found" });
-            }
-
-            const stokAktual = barang.jumlah + oldJumlahKeluar;
-
-            if (stokAktual < newJumlahKeluar) {
-                return res.status(400).json({
-                    message: "Jumlah Keluar melebihi jumlah barang yang tersedia"
-                });
-            }
-            
-            barang.jumlah = stokAktual - newJumlahKeluar;
-            await barang.save();
-        }
-
         const updatedBarangKeluar = await barangKeluar.update({
-            barang_id: newBarangId,
-            user_id: req.user.id,
-            cabang_id,
-            ruangan_id,
-            jumlah_keluar: newJumlahKeluar,
             tanggal_keluar,
             keterangan
         });

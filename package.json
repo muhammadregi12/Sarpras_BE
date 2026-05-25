@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "exceljs": "^4.4.0",
@@ -10,7 +11,8 @@
     "mysql2": "^3.20.0",
     "puppeteer": "^24.42.0",
     "qrcode": "^1.5.4",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "sharp": "^0.34.5"
   },
   "name": "sarpras",
   "version": "1.0.0",

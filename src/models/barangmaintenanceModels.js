@@ -37,7 +37,9 @@ const BarangMaintenance = sequelize.define("BarangMaintenance", {
         references: {
             model: 'users',
             key: 'id',
-        }
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
     },
     jumlah_maintenance: {
         type: DataTypes.INTEGER,
@@ -73,6 +75,10 @@ const BarangMaintenance = sequelize.define("BarangMaintenance", {
         type: DataTypes.INTEGER,
         allowNull: true,
         defaultValue: 0,
+    },
+    tingkat_kerusakan: {
+        type: DataTypes.ENUM('ringan', 'sedang', 'berat'),
+        allowNull: true,
     },
 }, {
     tableName: "barang_maintenance",

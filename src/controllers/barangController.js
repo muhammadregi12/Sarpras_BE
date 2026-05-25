@@ -7,6 +7,7 @@ const Kategori = require("../models/kategoriModels");
 const { generatePDF } = require("../services/exportPdf");
 const ExcelJS = require("exceljs");
 const Cabang = require("../models/cabangModels");
+const sharp = require("sharp");
 
 const barangInclude = [
   { model: Kategori, as: "kategori", attributes: ["id", "name_kategori"] },
@@ -21,6 +22,22 @@ const deleteImageFile = (imagePath) => {
     fs.unlinkSync(resolved);
   }
 };
+
+const convertToWebP = async (filePath) => {
+  if (!filePath) return null;
+
+  const dir = path.dirname(filePath);
+  const baseName = path.basename(filePath, path.extname(filePath));
+  const webpPath = path.join(dir, `${baseName}.webp`).replace(/\\/g, "/");
+
+  await sharp(filePath).webp({ quality: 80 }).toFile(webpPath);
+
+  deleteImageFile(filePath);
+
+  return webpPath;
+};
+
+
 
 exports.getAllBarang = async (req, res) => {
   try {
@@ -72,7 +89,7 @@ exports.createBarang = async (req, res) => {
     const { name, kode_barang, ruangan_id, cabang_id, kategori_id, satuan, keterangan, tahun_pengadaan } = req.body;
 
     if (!name || !kode_barang || !ruangan_id || !cabang_id || !kategori_id || !satuan || !tahun_pengadaan) {
-      deleteImageFile(uploadedFile); // FIX: bersihkan file jika validasi gagal
+      deleteImageFile(uploadedFile);
       return res.status(400).json({
         message: "Name, Kode Barang, Ruangan Id, Cabang Id, Kategori Id, Satuan, and Tahun Pengadaan are required",
       });
@@ -80,20 +97,37 @@ exports.createBarang = async (req, res) => {
 
     const existingBarang = await Barang.findOne({ where: { kode_barang } });
     if (existingBarang) {
-      deleteImageFile(uploadedFile); // FIX: bersihkan file jika kode duplikat
+      deleteImageFile(uploadedFile);
       return res.status(400).json({ message: "Kode Barang already exists" });
     }
 
+    if (uploadedFile) {
+      const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+      const fileExtension = path.extname(uploadedFile).toLowerCase();
+
+      if (!allowedExtensions.includes(fileExtension)) {
+        deleteImageFile(uploadedFile);
+        return res.status(400).json({ message: "Invalid file type. Only JPG, JPEG, PNG, WEBP, and GIF files are allowed." });
+      }
+    }
+
+    if (req.file && req.file.size > 1 * 1024 * 1024) {
+      deleteImageFile(uploadedFile);
+      return res.status(400).json({ message: "File size exceeds the limit of 1MB." });
+    }
+
+    const finalImagePath = uploadedFile ? await convertToWebP(uploadedFile) : null;
+
     const barang = await Barang.create({
       name, kode_barang, ruangan_id, cabang_id, kategori_id,
-      image: uploadedFile,
+      image: finalImagePath,
       satuan, keterangan, tahun_pengadaan,
     });
 
     return res.status(201).json({ message: "Create Barang", data: barang });
   } catch (error) {
-    deleteImageFile(uploadedFile); // FIX: bersihkan file jika DB error
-    return res.status(500).json({ message: "Internal Server Error", error: error.message }); // FIX: sertakan error.message
+    deleteImageFile(uploadedFile);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
@@ -105,7 +139,7 @@ exports.updateBarang = async (req, res) => {
     const { name, kode_barang, ruangan_id, cabang_id, kategori_id, satuan, keterangan, tahun_pengadaan } = req.body;
 
     if (!name || !kode_barang || !ruangan_id || !cabang_id || !kategori_id || !satuan || !tahun_pengadaan) {
-      deleteImageFile(uploadedFile); // FIX: bersihkan file jika validasi gagal
+      deleteImageFile(uploadedFile);
       return res.status(400).json({
         message: "Name, Kode Barang, Ruangan Id, Cabang Id, Kategori Id, Satuan, and Tahun Pengadaan are required",
       });
@@ -123,16 +157,30 @@ exports.updateBarang = async (req, res) => {
       return res.status(400).json({ message: "Kode Barang already exists" });
     }
 
-    // FIX: hanya hapus & ganti gambar lama jika ada file baru yang diupload
-    let finalImagePath = barang.image; // default: pertahankan gambar lama
     if (uploadedFile) {
-      deleteImageFile(barang.image);   // hapus gambar lama dari disk
-      finalImagePath = uploadedFile;   // gunakan gambar baru
+      const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+      const fileExtension = path.extname(uploadedFile).toLowerCase();
+
+      if (!allowedExtensions.includes(fileExtension)) {
+        deleteImageFile(uploadedFile);
+        return res.status(400).json({ message: "Invalid file type. Only JPG, JPEG, PNG, WEBP, and GIF files are allowed." });
+      }
+    }
+
+    if (req.file && req.file.size > 1 * 1024 * 1024) {
+      deleteImageFile(uploadedFile);
+      return res.status(400).json({ message: "File size exceeds the limit of 1MB." });
+    }
+
+    let finalImagePath = barang.image;
+    if (uploadedFile) {
+      deleteImageFile(barang.image); 
+      finalImagePath = await convertToWebP(uploadedFile);
     }
 
     await barang.update({
       name, kode_barang, ruangan_id, cabang_id, kategori_id,
-      image: finalImagePath, // FIX: tidak lagi menimpa dengan null
+      image: finalImagePath,
       satuan, keterangan, tahun_pengadaan,
     });
 

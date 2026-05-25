@@ -16,7 +16,7 @@ exports.getAllBarangMasuk = async (req, res) => {
        const offset = (page - 1) * limit;
 
        const barangMasuk = await BarangMasuk.findAndCountAll({
-            attributes: ["id", "jumlah", "tanggal_masuk", "harga_satuan"],
+            attributes: ["id", "jumlah", "tanggal_masuk", "harga_satuan", "no_dokumen", "keterangan"],
             include: [
                 {
                     model: Barang,

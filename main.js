@@ -35,12 +35,14 @@ const startServer = async () => {
         console.log("mysql connected");
 
         // seeder database
-        await userSeeder();
-        await cabangSeeder();
-        await supplierSeeder();
-        await ruanganSeeder();
-        await kategoriSeeder();
-        await barangSeeder();
+        if (process.env.SEED_DB === 'true') {
+            await userSeeder();
+            await cabangSeeder();
+            await supplierSeeder();
+            await ruanganSeeder();
+            await kategoriSeeder();
+            await barangSeeder();
+        }
 
         app.listen(PORT, () => {
             console.log(`app running on http://localhost:${PORT}`);

@@ -10,8 +10,10 @@ const ExcelJS     = require("exceljs");
 const formatTanggal = (tgl) =>
     tgl ? new Date(tgl).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-";
 
-function buildPeriodeWhere({ tipe, tanggal, bulan, tahun }) {
-    if (!tipe) throw { status: 400, message: "Parameter 'tipe' wajib diisi: harian | bulanan | tahunan" };
+function buildPeriodeWhere({ tipe, tanggal, bulan, tahun, start_date, end_date }) {
+    if (!tipe) throw { status: 400, message: "Parameter 'tipe' wajib diisi: harian | bulanan | tahunan | custom" };
+
+    const formatOpts = { day: "numeric", month: "long", year: "numeric" };
 
     if (tipe === "harian") {
         if (!tanggal) throw { status: 400, message: "Parameter 'tanggal' wajib diisi (format: YYYY-MM-DD)" };
@@ -43,7 +45,32 @@ function buildPeriodeWhere({ tipe, tanggal, bulan, tahun }) {
         };
     }
 
-    throw { status: 400, message: "Tipe tidak valid. Gunakan: harian | bulanan | tahunan" };
+    if (tipe === "custom") {
+        if (!start_date && !end_date) {
+            throw { status: 400, message: "Minimal salah satu 'start_date' atau 'end_date' harus diisi" };
+        }
+
+        let start, end, labelPeriode;
+
+        if (start_date && !end_date) {
+            start        = new Date(start_date); start.setHours(0, 0, 0, 0);
+            end          = new Date();            end.setHours(23, 59, 59, 999);
+            labelPeriode = `Sejak ${new Date(start_date).toLocaleDateString("id-ID", formatOpts)} s/d Sekarang`;
+        } else if (!start_date && end_date) {
+            start        = new Date("2000-01-01"); start.setHours(0, 0, 0, 0);
+            end          = new Date(end_date);     end.setHours(23, 59, 59, 999);
+            labelPeriode = `Sampai dengan ${new Date(end_date).toLocaleDateString("id-ID", formatOpts)}`;
+        } else {
+            start = new Date(start_date); start.setHours(0, 0, 0, 0);
+            end   = new Date(end_date);   end.setHours(23, 59, 59, 999);
+            if (start > end) throw { status: 400, message: "start_date tidak boleh lebih besar dari end_date" };
+            labelPeriode = `${new Date(start_date).toLocaleDateString("id-ID", formatOpts)} s/d ${new Date(end_date).toLocaleDateString("id-ID", formatOpts)}`;
+        }
+
+        return { whereClause: { tanggal_rusak: { [Op.between]: [start, end] } }, labelPeriode };
+    }
+
+    throw { status: 400, message: "Tipe tidak valid. Gunakan: harian | bulanan | tahunan | custom" };
 }
 
 function buildLokasiFilter(whereClause, { cabang_id, ruangan_id }) {
@@ -79,11 +106,10 @@ async function resolveLokasiInfo({ cabang_id, ruangan_id }) {
 
 exports.getLaporanBarangRusak = async (req, res) => {
     try {
-        const { tipe, tanggal, bulan, tahun, cabang_id, ruangan_id } = req.query;
+        const { tipe, tanggal, bulan, tahun, start_date, end_date, cabang_id, ruangan_id } = req.query;
 
-        const { whereClause, labelPeriode } = buildPeriodeWhere({ tipe, tanggal, bulan, tahun });
+        const { whereClause, labelPeriode } = buildPeriodeWhere({ tipe, tanggal, bulan, tahun, start_date, end_date });
         const finalWhere = buildLokasiFilter(whereClause, { cabang_id, ruangan_id });
-
         const { infoCabang, infoRuangan } = await resolveLokasiInfo({ cabang_id, ruangan_id });
 
         const data = await BarangRusak.findAll({
@@ -94,7 +120,6 @@ exports.getLaporanBarangRusak = async (req, res) => {
 
         const totalJumlahRusak = data.reduce((sum, item) => sum + item.jumlah_rusak, 0);
 
-        // Rekapitulasi per tingkat kerusakan
         const rekapTingkat = data.reduce((acc, item) => {
             const tingkat = item.tingkat_kerusakan?.toLowerCase() ?? "unknown";
             acc[tingkat] = (acc[tingkat] || 0) + item.jumlah_rusak;
@@ -107,8 +132,8 @@ exports.getLaporanBarangRusak = async (req, res) => {
         ].filter(Boolean).join(" | ");
 
         return res.status(200).json({
-            message:     `Laporan Barang Rusak - ${labelPeriode}${labelLokasi ? ` | ${labelLokasi}` : ""}`,
-            periode:     labelPeriode,
+            message:            `Laporan Barang Rusak - ${labelPeriode}${labelLokasi ? ` | ${labelLokasi}` : ""}`,
+            periode:            labelPeriode,
             filter: {
                 cabang:  infoCabang  ? { id: infoCabang.id,  name: infoCabang.name_cabang }   : null,
                 ruangan: infoRuangan ? { id: infoRuangan.id, name: infoRuangan.name_ruangan } : null,
@@ -127,11 +152,10 @@ exports.getLaporanBarangRusak = async (req, res) => {
 
 exports.exportPDFLaporanBarangRusak = async (req, res) => {
     try {
-        const { tipe, tanggal, bulan, tahun, cabang_id, ruangan_id } = req.query;
+        const { tipe, tanggal, bulan, tahun, start_date, end_date, cabang_id, ruangan_id } = req.query;
 
-        const { whereClause, labelPeriode } = buildPeriodeWhere({ tipe, tanggal, bulan, tahun });
+        const { whereClause, labelPeriode } = buildPeriodeWhere({ tipe, tanggal, bulan, tahun, start_date, end_date });
         const finalWhere = buildLokasiFilter(whereClause, { cabang_id, ruangan_id });
-
         const { infoCabang, infoRuangan } = await resolveLokasiInfo({ cabang_id, ruangan_id });
 
         const barangRusakData = await BarangRusak.findAll({
@@ -147,7 +171,6 @@ exports.exportPDFLaporanBarangRusak = async (req, res) => {
             infoRuangan ? infoRuangan.name_ruangan  : null,
         ].filter(Boolean).join(" - ");
 
-        // Badge HTML tingkat kerusakan
         const tingkatMap = {
             ringan: `<span class="badge-ringan">Ringan</span>`,
             sedang: `<span class="badge-sedang">Sedang</span>`,
@@ -183,7 +206,6 @@ exports.exportPDFLaporanBarangRusak = async (req, res) => {
         };
 
         const pdfBuffer = await generatePDF("barangRusak.html", pdfData);
-
         const fileLabel = [tipe, labelLokasi.replace(/ /g, "-")].filter(Boolean).join("-");
 
         res.set({
@@ -202,11 +224,10 @@ exports.exportPDFLaporanBarangRusak = async (req, res) => {
 
 exports.exportExcelLaporanBarangRusak = async (req, res) => {
     try {
-        const { tipe, tanggal, bulan, tahun, cabang_id, ruangan_id } = req.query;
+        const { tipe, tanggal, bulan, tahun, start_date, end_date, cabang_id, ruangan_id } = req.query;
 
-        const { whereClause, labelPeriode } = buildPeriodeWhere({ tipe, tanggal, bulan, tahun });
+        const { whereClause, labelPeriode } = buildPeriodeWhere({ tipe, tanggal, bulan, tahun, start_date, end_date });
         const finalWhere = buildLokasiFilter(whereClause, { cabang_id, ruangan_id });
-
         const { infoCabang, infoRuangan } = await resolveLokasiInfo({ cabang_id, ruangan_id });
 
         const barangRusakData = await BarangRusak.findAll({
@@ -224,7 +245,6 @@ exports.exportExcelLaporanBarangRusak = async (req, res) => {
 
         const fullLabel = labelLokasi ? `${labelPeriode} | ${labelLokasi}` : labelPeriode;
 
-        // ── Workbook ──────────────────────────────────────────────────────────
         const workbook  = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Laporan Barang Rusak");
 
@@ -277,9 +297,8 @@ exports.exportExcelLaporanBarangRusak = async (req, res) => {
         dateCell.alignment = { horizontal: "center" };
         worksheet.getRow(3).height = 18;
 
-        worksheet.addRow([]); // baris kosong
+        worksheet.addRow([]);
 
-        // Header kolom
         const headerRow = worksheet.addRow([
             "No", "Kode Barang", "Nama Barang", "Cabang", "Ruangan",
             "Jumlah Rusak", "Tingkat Kerusakan", "Tanggal Rusak", "Keterangan",
@@ -304,7 +323,6 @@ exports.exportExcelLaporanBarangRusak = async (req, res) => {
             { key: "keterangan",        width: 30 },
         ];
 
-        // Isi data
         barangRusakData.forEach((item, index) => {
             const d = item.toJSON();
 
@@ -315,9 +333,9 @@ exports.exportExcelLaporanBarangRusak = async (req, res) => {
                 d.cabang?.name_cabang         ?? "-",
                 d.ruangan?.name_ruangan       ?? "-",
                 d.jumlah_rusak,
-                d.tingkat_kerusakan          ?? "-",
+                d.tingkat_kerusakan           ?? "-",
                 formatTanggal(d.tanggal_rusak),
-                d.keterangan                 ?? "-",
+                d.keterangan                  ?? "-",
             ]);
 
             dataRow.height = 20;
@@ -326,14 +344,12 @@ exports.exportExcelLaporanBarangRusak = async (req, res) => {
                 cell.alignment = { vertical: "middle" };
             });
 
-            // Zebra stripe
             if (index % 2 === 0) {
                 dataRow.eachCell((cell) => {
                     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF0F0" } };
                 });
             }
 
-            // Warna cell tingkat kerusakan (kolom 7)
             const tingkat = d.tingkat_kerusakan?.toLowerCase();
             const color   = tingkatColor[tingkat];
             if (color) {
@@ -344,7 +360,6 @@ exports.exportExcelLaporanBarangRusak = async (req, res) => {
             }
         });
 
-        // Baris total
         const totalRow = worksheet.addRow(["", "", "", "", "TOTAL", totalJumlahRusak, "", "", ""]);
         totalRow.getCell(5).font = { bold: true };
         totalRow.getCell(6).font = { bold: true, color: { argb: "FFC0392B" } };

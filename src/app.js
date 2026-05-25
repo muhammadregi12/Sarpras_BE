@@ -4,6 +4,9 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const path = require('path');
+const compression = require('compression');
+
+app.use(compression());
 
 // routes
 const authRoutes = require('./routes/authRoutes');

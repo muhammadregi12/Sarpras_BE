@@ -12,8 +12,8 @@ const { Op, fn, col, literal } = require("sequelize");
 
 exports.getDashboard = async (req, res) => {
     try {
-
         const tahunIni = new Date().getFullYear();
+        const userId = req.user.id;
 
         // ── 1. CARDS ─────────────────────────────────────────────
         const [
@@ -34,14 +34,12 @@ exports.getDashboard = async (req, res) => {
             Cabang.count(),
         ]);
 
-        // Total stok semua barang
         const stokResult = await Barang.findOne({
             attributes: [[fn("SUM", col("jumlah")), "total_stok"]],
             raw: true
         });
         const totalStok = parseInt(stokResult?.total_stok ?? 0);
 
-        // Maintenance yang masih berjalan
         const maintenanceBerjalan = await BarangMaintenance.count({
             where: { status: "maintenance" }
         });
@@ -84,7 +82,6 @@ exports.getDashboard = async (req, res) => {
             })
         ]);
 
-        // Mapping 12 bulan (isi 0 jika tidak ada data)
         const namaBulan = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
         const chartMasukKeluar = namaBulan.map((nama, i) => {
             const bulan  = i + 1;
@@ -167,7 +164,7 @@ exports.getDashboard = async (req, res) => {
             limit: 5,
         });
 
-        // ── 7. ALERT: Barang Stok Rendah (jumlah <= 5) ──────────
+        // ── 7. ALERT: Stok Kritis (jumlah <= 5), max 5 data ─────
         const barangStokRendah = await Barang.findAll({
             where: { jumlah: { [Op.lte]: 5 } },
             attributes: ["id", "name", "kode_barang", "jumlah", "satuan"],
@@ -176,10 +173,10 @@ exports.getDashboard = async (req, res) => {
                 { model: Cabang,  as: "cabang",  attributes: ["id", "name_cabang"] },
             ],
             order: [["jumlah", "ASC"]],
-            limit: 10,
+            limit: 5, // ← diperbaiki dari 10 ke 5
         });
 
-        // ── 8. TABEL: Maintenance Berjalan ───────────────────────
+        // ── 8. TABEL: Maintenance Berjalan (5 data) ──────────────
         const maintenanceBerjalanList = await BarangMaintenance.findAll({
             where: { status: "maintenance" },
             attributes: ["id", "jumlah_maintenance", "tanggal_maintenance", "tanggal_selesai", "status", "biaya"],
@@ -190,6 +187,67 @@ exports.getDashboard = async (req, res) => {
             order: [["tanggal_maintenance", "DESC"]],
             limit: 5,
         });
+
+        const [aktivitasMasuk, aktivitasKeluar, aktivitasMaintenance] = await Promise.all([
+            BarangMasuk.findAll({
+                where: { user_id: userId },
+                attributes: ["id", "jumlah", "tanggal_masuk"],
+                include: [
+                    { model: Barang, as: "barang", attributes: ["id", "name", "kode_barang"] },
+                ],
+                order: [["tanggal_masuk", "DESC"]],
+                limit: 5,
+            }),
+            BarangKeluar.findAll({
+                where: { user_id: userId },
+                attributes: ["id", "jumlah_keluar", "tanggal_keluar"],
+                include: [
+                    { model: Barang, as: "barang", attributes: ["id", "name", "kode_barang"] },
+                ],
+                order: [["tanggal_keluar", "DESC"]],
+                limit: 5,
+            }),
+            BarangMaintenance.findAll({
+                where: { user_id: userId },
+                attributes: ["id", "jumlah_maintenance", "tanggal_maintenance", "status"],
+                include: [
+                    { model: Barang, as: "barang", attributes: ["id", "name", "kode_barang"] },
+                ],
+                order: [["tanggal_maintenance", "DESC"]],
+                limit: 5,
+            }),
+        ]);
+
+        // Normalisasi format aktivitas agar seragam
+        const aktivitasList = [
+            ...aktivitasMasuk.map(a => ({
+                tipe:       "barang_masuk",
+                label:      "Barang Masuk",
+                id:         a.id,
+                barang:     a.barang,
+                jumlah:     a.jumlah,
+                tanggal:    a.tanggal_masuk,
+            })),
+            ...aktivitasKeluar.map(a => ({
+                tipe:       "barang_keluar",
+                label:      "Barang Keluar",
+                id:         a.id,
+                barang:     a.barang,
+                jumlah:     a.jumlah_keluar,
+                tanggal:    a.tanggal_keluar,
+            })),
+            ...aktivitasMaintenance.map(a => ({
+                tipe:       "maintenance",
+                label:      "Maintenance",
+                id:         a.id,
+                barang:     a.barang,
+                jumlah:     a.jumlah_maintenance,
+                status:     a.status,
+                tanggal:    a.tanggal_maintenance,
+            })),
+        ]
+        .sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)) // sort DESC
+        .slice(0, 5);
 
         // ── RESPONSE ─────────────────────────────────────────────
         return res.status(200).json({
@@ -206,9 +264,9 @@ exports.getDashboard = async (req, res) => {
                 total_cabang:          totalCabang,
             },
             charts: {
-                masuk_keluar_per_bulan: chartMasukKeluar,  // line/bar chart
-                barang_per_kategori:    chartKategori,      // pie/donut chart
-                barang_per_cabang:      chartCabang,        // bar chart
+                masuk_keluar_per_bulan: chartMasukKeluar,
+                barang_per_kategori:    chartKategori,
+                barang_per_cabang:      chartCabang,
             },
             tables: {
                 barang_masuk_terbaru:   barangMasukTerbaru.map(b => b.toJSON()),
@@ -218,7 +276,8 @@ exports.getDashboard = async (req, res) => {
             alerts: {
                 stok_rendah:       barangStokRendah.map(b => b.toJSON()),
                 total_stok_rendah: barangStokRendah.length,
-            }
+            },
+            aktivitas_terbaru: aktivitasList, 
         });
 
     } catch (error) {

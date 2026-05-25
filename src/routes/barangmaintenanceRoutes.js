@@ -5,13 +5,13 @@ const {authMiddleware} = require('../middleware/authMiddleware');
 
 router.use(authMiddleware)
 
-router.get('/export/pdf', authMiddleware, barangMaintenanceController.exportPDFBarangMaintenance);
-router.get('/export/excel', authMiddleware, barangMaintenanceController.exportExcelBarangMaintenance);
-router.post('/', authMiddleware, barangMaintenanceController.createBarangMaintenance);
-router.get('/', authMiddleware, barangMaintenanceController.getAllBarangMaintenance);
-router.get('/:id', authMiddleware, barangMaintenanceController.getBarangMaintenanceById);
-router.put('/:id', authMiddleware, barangMaintenanceController.updateBarangMaintenance);
-router.put('/selesai/:id', authMiddleware, barangMaintenanceController.updateStatusBarangMaintenance);
-router.delete('/:id', authMiddleware, barangMaintenanceController.deleteBarangMaintenance);
+router.get('/export/pdf', barangMaintenanceController.exportPDFBarangMaintenance);
+router.get('/export/excel', barangMaintenanceController.exportExcelBarangMaintenance);
+router.post('/', barangMaintenanceController.createBarangMaintenance);
+router.get('/', barangMaintenanceController.getAllBarangMaintenance);
+router.get('/:id', barangMaintenanceController.getBarangMaintenanceById);
+router.put('/:id', barangMaintenanceController.updateBarangMaintenance);
+router.put('/selesai/:id', barangMaintenanceController.updateStatusBarangMaintenance);
+router.delete('/:id', barangMaintenanceController.deleteBarangMaintenance);
 
 module.exports = router;
